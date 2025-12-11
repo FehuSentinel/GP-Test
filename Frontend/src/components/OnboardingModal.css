@@ -1,0 +1,75 @@
+.onboarding-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.onboarding-modal {
+  background-color: #252525;
+  border-radius: 10px;
+  padding: 40px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.onboarding-modal h1 {
+  color: #fff;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.onboarding-modal p {
+  color: #e0e0e0;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.onboarding-modal form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.username-input {
+  padding: 12px;
+  background-color: #2d2d2d;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #e0e0e0;
+  font-size: 16px;
+}
+
+.username-input:focus {
+  outline: none;
+  border-color: #4a9eff;
+}
+
+.submit-button {
+  padding: 12px;
+  background-color: #4a9eff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.submit-button:hover:not(:disabled) {
+  background-color: #357abd;
+}
+
+.submit-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
