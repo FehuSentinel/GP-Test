@@ -65,6 +65,7 @@ class LLMClient:
         
         try:
             # Llamada a Ollama usando API de chat (más estable)
+            # Configuración optimizada para bajo consumo de recursos
             response = requests.post(
                 self.chat_url,
                 json={
@@ -74,7 +75,9 @@ class LLMClient:
                     "stream": False,
                     "options": {
                         "temperature": 0.7,
-                        "num_predict": 2000
+                        "num_predict": 1000,  # Reducido para menos recursos
+                        "num_ctx": 2048,  # Contexto reducido
+                        "num_thread": 2  # Menos threads para menos CPU
                     }
                 },
                 timeout=120
@@ -155,7 +158,9 @@ Genera SOLO el código, sin explicaciones adicionales a menos que sea necesario 
                     "stream": False,
                     "options": {
                         "temperature": 0.3,
-                        "num_predict": 2000
+                        "num_predict": 1000,  # Reducido para menos recursos
+                        "num_ctx": 2048,  # Contexto reducido
+                        "num_thread": 2  # Menos threads para menos CPU
                     }
                 },
                 timeout=60

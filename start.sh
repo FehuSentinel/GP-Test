@@ -7,25 +7,70 @@ echo ""
 
 # Verificar e instalar Ollama
 OLLAMA_PID=""
-LLAMA_MODEL="llama3.2"
-DEEPSEEK_MODEL="deepseek-coder"
+# Modelos más ligeros para menos consumo de recursos
+LLAMA_MODEL="llama3.2:1b"  # Versión 1B (muy ligera, ~600MB)
+DEEPSEEK_MODEL="deepseek-coder:1.3b"  # Versión 1.3B (ligera, ~800MB)
+# Alternativas aún más ligeras si es necesario:
+# LLAMA_MODEL="phi3:mini"  # ~2GB RAM
+# DEEPSEEK_MODEL="codellama:7b-code"  # ~4GB RAM
 
 echo "🔍 Verificando Ollama..."
 if ! command -v ollama &> /dev/null; then
-    echo "📦 Ollama no está instalado. Instalando..."
+    echo "📦 Ollama no está instalado"
     echo ""
-    echo "   Instalando Ollama..."
-    curl -fsSL https://ollama.com/install.sh | sh
+    echo "   Intentando instalar Ollama..."
+    echo "   (Esto puede tardar si hay problemas de conexión)"
     
-    if [ $? -ne 0 ]; then
-        echo "❌ Error instalando Ollama"
-        echo "   Instala manualmente desde: https://ollama.com"
-        exit 1
+    # Intentar instalación con timeout más largo y reintentos
+    if curl --connect-timeout 30 --max-time 300 -fsSL https://ollama.com/install.sh | sh 2>&1; then
+        echo "✅ Ollama instalado correctamente"
+    else
+        echo ""
+        echo "⚠️  Error instalando Ollama automáticamente"
+        echo ""
+        echo "📋 Opciones para instalar Ollama manualmente:"
+        echo ""
+        echo "   Opción 1: Descargar e instalar manualmente"
+        echo "   1. Visita: https://ollama.com/download"
+        echo "   2. Descarga el instalador para Linux"
+        echo "   3. Ejecuta: bash <archivo_descargado>"
+        echo ""
+        echo "   Opción 2: Usar el método alternativo"
+        echo "   curl -L https://ollama.com/download/ollama-linux-amd64 -o /tmp/ollama"
+        echo "   chmod +x /tmp/ollama"
+        echo "   sudo mv /tmp/ollama /usr/local/bin/ollama"
+        echo ""
+        echo "   Opción 3: Si ya tienes Ollama instalado en otro lugar"
+        echo "   Asegúrate de que esté en tu PATH"
+        echo ""
+        read -p "   ¿Quieres intentar la instalación manual ahora? (s/n): " intentar_manual
+        
+        if [ "$intentar_manual" = "s" ]; then
+            echo ""
+            echo "   Descargando Ollama manualmente..."
+            if curl --connect-timeout 30 --max-time 300 -L https://ollama.com/download/ollama-linux-amd64 -o /tmp/ollama 2>/dev/null; then
+                chmod +x /tmp/ollama
+                sudo mv /tmp/ollama /usr/local/bin/ollama 2>/dev/null
+                if command -v ollama &> /dev/null; then
+                    echo "✅ Ollama instalado manualmente"
+                else
+                    echo "❌ Error moviendo Ollama a /usr/local/bin"
+                    echo "   Intenta ejecutar: sudo mv /tmp/ollama /usr/local/bin/ollama"
+                    exit 1
+                fi
+            else
+                echo "❌ Error descargando Ollama manualmente"
+                echo "   Por favor instálalo manualmente desde: https://ollama.com"
+                exit 1
+            fi
+        else
+            echo ""
+            echo "   Por favor instala Ollama manualmente antes de continuar"
+            exit 1
+        fi
     fi
-    
-    echo "✅ Ollama instalado"
 else
-    echo "✅ Ollama está instalado"
+    echo "✅ Ollama está instalado ($(ollama --version 2>/dev/null || echo 'versión desconocida'))"
 fi
 
 # Verificar si el servicio Ollama está corriendo
