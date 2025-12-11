@@ -22,8 +22,23 @@ function App() {
       })
       .catch(error => {
         console.error('Error verificando usuario:', error);
+        // Si hay error de conexión, mostrar onboarding de todas formas
+        if (error.message && error.message.includes('conectar')) {
+          console.warn('Backend no disponible, mostrando onboarding');
+        }
         setShowOnboarding(true);
       });
+
+    // Escuchar eventos de creación de conversación
+    const handleConversationCreated = (event) => {
+      setCurrentConversation(event.detail.conversationId);
+    };
+
+    window.addEventListener('conversationCreated', handleConversationCreated);
+    
+    return () => {
+      window.removeEventListener('conversationCreated', handleConversationCreated);
+    };
   }, []);
 
   const handleUsernameSubmit = async (name) => {

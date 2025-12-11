@@ -17,13 +17,20 @@ if ! curl -s http://localhost:8000/v1/models > /dev/null 2>&1; then
     read -r respuesta
     if [ "$respuesta" = "s" ]; then
         echo "🚀 Iniciando vLLM..."
-        cd Backend
-        source venv/bin/activate 2>/dev/null || true
-        python3 setup_models.py &
+        echo "   Esto puede tomar varios minutos la primera vez..."
+        # Iniciar vLLM directamente en lugar de usar setup_models.py
+        vllm serve meta-llama/Llama-3.1-8B-Instruct > /tmp/vllm.log 2>&1 &
         VLLM_PID=$!
-        cd ..
-        echo "⏳ Esperando a que vLLM esté listo..."
-        sleep 10
+        echo "⏳ Esperando a que vLLM esté listo (esto puede tomar varios minutos)..."
+        # Esperar hasta que vLLM responda
+        for i in {1..60}; do
+            sleep 5
+            if curl -s http://localhost:8000/v1/models > /dev/null 2>&1; then
+                echo "✅ vLLM está listo!"
+                break
+            fi
+            echo "   Esperando... ($i/60)"
+        done
     else
         echo "   Por favor inicia vLLM antes de continuar"
         exit 1

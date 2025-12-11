@@ -88,6 +88,11 @@ def set_config(key, value):
     conn.commit()
     conn.close()
 
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """Endpoint de salud para verificar que el backend está funcionando"""
+    return jsonify({'status': 'ok', 'service': 'chat-backend'})
+
 @app.route('/api/config/user', methods=['GET'])
 def get_user_name():
     """Obtiene el nombre de usuario"""
@@ -211,7 +216,7 @@ def chat():
     conn.commit()
     conn.close()
     
-    # Procesar con Llama3B
+    # Procesar con Llama usando vLLM
     try:
         response = process_with_llama(message, username, conversation_id)
         
@@ -221,7 +226,7 @@ def chat():
         cursor.execute('''
             INSERT INTO messages (conversation_id, role, content) 
             VALUES (?, ?, ?)
-        ''', (conversation_id, 'assistant', response['content']))
+        ''', (conversation_id, 'assistant', response.get('content', 'Error al generar respuesta')))
         conn.commit()
         conn.close()
         
@@ -230,8 +235,30 @@ def chat():
             'response': response
         })
     except Exception as e:
-        logger.error(f"Error procesando mensaje: {str(e)}")
-        return jsonify({'error': f'Error procesando mensaje: {str(e)}'}), 500
+        logger.error(f"Error procesando mensaje: {str(e)}", exc_info=True)
+        error_message = str(e)
+        
+        # Guardar mensaje de error
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        error_content = f"Error al procesar el mensaje: {error_message}"
+        cursor.execute('''
+            INSERT INTO messages (conversation_id, role, content) 
+            VALUES (?, ?, ?)
+        ''', (conversation_id, 'assistant', error_content))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'conversation_id': conversation_id,
+            'response': {
+                'content': error_content,
+                'needs_code': False,
+                'code': None,
+                'language': None
+            },
+            'error': error_message
+        }), 500
 
 @app.route('/api/execute', methods=['POST'])
 def execute_script():

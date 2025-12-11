@@ -7,7 +7,20 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 30000, // 30 segundos de timeout
 });
+
+// Interceptor para manejar errores
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.code === 'ECONNREFUSED' || error.message.includes('Network Error')) {
+      console.error('Error de conexión: El backend no está disponible');
+      return Promise.reject(new Error('No se puede conectar con el servidor. Asegúrate de que el backend esté corriendo en http://localhost:5000'));
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Configuración
 export const checkUsername = async () => {

@@ -72,16 +72,31 @@ function ChatArea({ conversationId, username }) {
         });
       }
 
-      // Si es una nueva conversación, recargar la lista
+      // Si es una nueva conversación, notificar al componente padre
       if (!conversationId && response.conversation_id) {
-        window.location.reload();
+        window.dispatchEvent(new CustomEvent('conversationCreated', { 
+          detail: { conversationId: response.conversation_id } 
+        }));
       }
     } catch (error) {
       console.error('Error enviando mensaje:', error);
+      let errorText = 'Error al enviar el mensaje';
+      
+      if (error.response) {
+        // Error del servidor
+        errorText = error.response.data?.error || error.response.data?.message || errorText;
+      } else if (error.request) {
+        // Error de conexión
+        errorText = 'No se pudo conectar con el servidor. Verifica que el backend esté corriendo.';
+      } else {
+        // Otro error
+        errorText = error.message || errorText;
+      }
+      
       const errorMessage = {
         id: Date.now() + 1,
         role: 'assistant',
-        content: `Error: ${error.message}`,
+        content: `❌ ${errorText}`,
         created_at: new Date().toISOString()
       };
       setMessages(prev => [...prev, errorMessage]);

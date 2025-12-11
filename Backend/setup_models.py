@@ -102,22 +102,26 @@ def main():
         logger.info("\n💡 Nota: La primera vez descargará el modelo automáticamente.")
         logger.info("   Esto puede tomar varios minutos dependiendo de tu conexión.")
         
-        # Preguntar si quiere iniciar vLLM ahora
-        try:
-            respuesta = input("\n¿Quieres iniciar vLLM con Llama ahora? (s/n): ").lower()
-            if respuesta == 's':
-                process = start_vllm_with_model(LLAMA_MODEL)
-                if process:
-                    logger.info("\n✅ vLLM iniciado en background")
-                    logger.info("   Presiona Ctrl+C para detenerlo")
-                    try:
-                        process.wait()
-                    except KeyboardInterrupt:
-                        logger.info("\n🛑 Deteniendo vLLM...")
-                        process.terminate()
-        except KeyboardInterrupt:
-            logger.info("\n👋 Saliendo...")
-            sys.exit(0)
+        # Preguntar si quiere iniciar vLLM ahora (solo si hay stdin disponible)
+        if sys.stdin.isatty():
+            try:
+                respuesta = input("\n¿Quieres iniciar vLLM con Llama ahora? (s/n): ").lower()
+                if respuesta == 's':
+                    process = start_vllm_with_model(LLAMA_MODEL)
+                    if process:
+                        logger.info("\n✅ vLLM iniciado en background")
+                        logger.info("   Presiona Ctrl+C para detenerlo")
+                        try:
+                            process.wait()
+                        except KeyboardInterrupt:
+                            logger.info("\n🛑 Deteniendo vLLM...")
+                            process.terminate()
+            except (KeyboardInterrupt, EOFError):
+                logger.info("\n👋 Saliendo...")
+                sys.exit(0)
+        else:
+            logger.info("\n💡 Ejecuta este script de forma interactiva para iniciar vLLM automáticamente")
+            logger.info(f"   O inicia vLLM manualmente: vllm serve {LLAMA_MODEL}")
 
 if __name__ == "__main__":
     main()

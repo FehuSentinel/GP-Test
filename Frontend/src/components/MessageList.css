@@ -5,18 +5,21 @@
   display: flex;
   flex-direction: column;
   gap: 15px;
+  background: 
+    radial-gradient(circle at 50% 0%, rgba(0, 255, 65, 0.02) 0%, transparent 50%),
+    radial-gradient(circle at 50% 100%, rgba(0, 217, 255, 0.02) 0%, transparent 50%);
 }
 
 .empty-messages {
   text-align: center;
   padding: 40px;
-  color: #999;
+  color: var(--text-muted);
 }
 
 .empty-messages .hint {
   font-size: 14px;
   margin-top: 10px;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .loading-message {
@@ -28,14 +31,16 @@
 .typing-indicator {
   display: flex;
   gap: 5px;
+  align-items: center;
 }
 
 .typing-indicator span {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: #4a9eff;
+  background-color: var(--cyber-green);
   animation: typing 1.4s infinite;
+  box-shadow: 0 0 10px var(--cyber-green);
 }
 
 .typing-indicator span:nth-child(2) {
@@ -50,10 +55,11 @@
   0%, 60%, 100% {
     transform: translateY(0);
     opacity: 0.7;
+    box-shadow: 0 0 5px var(--cyber-green);
   }
   30% {
     transform: translateY(-10px);
     opacity: 1;
+    box-shadow: 0 0 15px var(--cyber-green);
   }
 }
-

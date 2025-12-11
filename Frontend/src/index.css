@@ -4,23 +4,78 @@
   box-sizing: border-box;
 }
 
+:root {
+  /* Colores de ciberseguridad */
+  --cyber-green: #00ff41;
+  --cyber-green-dark: #00cc33;
+  --cyber-green-light: #00ff88;
+  --cyber-red: #ff0040;
+  --cyber-red-dark: #cc0033;
+  --cyber-blue: #00d9ff;
+  --cyber-blue-dark: #0099cc;
+  --cyber-yellow: #ffaa00;
+  --cyber-purple: #9d00ff;
+  --cyber-purple-dark: #7a00cc;
+  
+  /* Fondos */
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #0d1117;
+  --bg-tertiary: #161b22;
+  --bg-hover: #1a1f26;
+  
+  /* Textos */
+  --text-primary: #00ff41;
+  --text-secondary: #00ff88;
+  --text-muted: #6e7681;
+  --text-dark: #21262d;
+}
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Courier New', 'Consolas', 'Monaco', 'Lucida Console', monospace;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #1a1a1a;
-  color: #e0e0e0;
+  background-color: var(--bg-primary);
+  background-image: 
+    radial-gradient(circle at 20% 50%, rgba(0, 255, 65, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(0, 217, 255, 0.03) 0%, transparent 50%);
+  color: var(--text-primary);
   height: 100vh;
   overflow: hidden;
 }
 
 code {
-  font-family: 'Courier New', monospace;
+  font-family: 'Courier New', 'Consolas', monospace;
 }
 
 #root {
   height: 100vh;
 }
 
+/* Scrollbar estilo cyber */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--cyber-green);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cyber-green-light);
+}
+
+/* Efecto de brillo/glow para elementos importantes */
+@keyframes glow {
+  0%, 100% {
+    text-shadow: 0 0 5px var(--cyber-green), 0 0 10px var(--cyber-green), 0 0 15px var(--cyber-green);
+  }
+  50% {
+    text-shadow: 0 0 10px var(--cyber-green), 0 0 20px var(--cyber-green), 0 0 30px var(--cyber-green);
+  }
+}
