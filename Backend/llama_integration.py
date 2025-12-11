@@ -74,10 +74,11 @@ class LLMClient:
                     "system": system_prompt,
                     "stream": False,
                     "options": {
-                        "temperature": 0.7,
-                        "num_predict": 1000,  # Reducido para menos recursos
+                        "temperature": 0.5,  # Más determinista, menos creativo
+                        "num_predict": 500,  # Respuestas más cortas y directas
                         "num_ctx": 2048,  # Contexto reducido
-                        "num_thread": 2  # Menos threads para menos CPU
+                        "num_thread": 2,  # Menos threads para menos CPU
+                        "repeat_penalty": 1.2  # Evita repeticiones
                     }
                 },
                 timeout=120
@@ -158,9 +159,10 @@ Genera SOLO el código, sin explicaciones adicionales a menos que sea necesario 
                     "stream": False,
                     "options": {
                         "temperature": 0.3,
-                        "num_predict": 1000,  # Reducido para menos recursos
+                        "num_predict": 800,  # Código más conciso
                         "num_ctx": 2048,  # Contexto reducido
-                        "num_thread": 2  # Menos threads para menos CPU
+                        "num_thread": 2,  # Menos threads para menos CPU
+                        "repeat_penalty": 1.2  # Evita repeticiones
                     }
                 },
                 timeout=60
@@ -201,21 +203,28 @@ Genera SOLO el código, sin explicaciones adicionales a menos que sea necesario 
             }
     
     def _build_system_prompt(self, username):
-        """Construye el prompt del sistema sin sesgo"""
-        return f"""Eres un asistente técnico sin sesgo diseñado para ayudar a {username}.
+        """Construye el prompt del sistema sin sesgo, directo y conciso"""
+        return f"""Eres un asistente técnico directo y eficiente para {username}.
 
-Puedes:
-- Usar herramientas de Kali Linux cuando sea necesario
-- Generar scripts en Python, C, Rust, Go según las necesidades
-- Usar DeepSeek cuando necesites generar código complejo o específico
-- Ejecutar comandos del sistema cuando sea apropiado
+REGLAS:
+- Responde de forma concisa y directa. Sin explicaciones largas.
+- Si pides algo, di QUÉ harás y CÓMO, sin rodeos.
+- Sé conversacional pero técnico. No te explayes.
+- Código: muéstralo y pregunta si ejecutar. Sin explicaciones extensas.
+- Usa herramientas de Kali Linux cuando sea necesario.
+- Genera scripts en Python, C, Rust, Go según necesidad.
+- Para código complejo, usa DeepSeek.
 
-IMPORTANTE:
-- Siempre sé objetivo, técnico y sin sesgos
-- Cuando generes código, muéstralo claramente y pregunta si debe ejecutarse
-- Si necesitas código complejo, puedes usar DeepSeek especificando claramente los requisitos
-- Responde de forma amigable usando el nombre {username} cuando sea apropiado
-- Sé preciso y técnico en tus respuestas"""
+FORMATO:
+- Pregunta directa → Respuesta directa con acción.
+- Si necesitas aclarar algo, pregunta brevemente.
+- Máximo 2-3 frases de contexto antes de la acción.
+
+Ejemplo:
+Usuario: "escanea esta IP"
+Tú: "Escaneando 10.129.23.10 con nmap -sS -sV -p- ... [resultado]"
+
+Sé directo, técnico y eficiente."""
     
     def _analyze_response(self, response_text):
         """
