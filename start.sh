@@ -7,11 +7,17 @@ echo ""
 
 # Verificar e instalar Ollama
 OLLAMA_PID=""
-# Modelos más ligeros para menos consumo de recursos
-LLAMA_MODEL="llama3.2:1b"  # Versión 1B (muy ligera, ~600MB)
-DEEPSEEK_MODEL="deepseek-coder:1.3b"  # Versión 1.3B (ligera, ~800MB)
-# Alternativas aún más ligeras si es necesario:
-# LLAMA_MODEL="phi3:mini"  # ~2GB RAM
+# Modelos SIN restricciones de seguridad (más permisivos)
+# Opciones recomendadas (de menos a más restrictivo):
+# 1. mistral:7b - Muy permisivo, buen rendimiento (~4GB RAM) - RECOMENDADO
+# 2. qwen2:7b - Modelo chino, muy permisivo (~4GB RAM)
+# 3. llama2:7b - Llama 2 sin restricciones de Llama 3 (~4GB RAM)
+# 4. codellama:7b - Enfocado en código, menos restrictivo (~4GB RAM)
+# 5. phi3:mini - Pequeño pero permisivo (~2GB RAM)
+LLAMA_MODEL="mistral:7b"  # Mistral - muy permisivo y sin restricciones
+DEEPSEEK_MODEL="codellama:7b"  # CodeLlama - menos restrictivo que DeepSeek
+# Alternativas más ligeras si tienes pocos recursos:
+# LLAMA_MODEL="phi3:mini"  # ~2GB RAM, permisivo
 # DEEPSEEK_MODEL="codellama:7b-code"  # ~4GB RAM
 
 echo "🔍 Verificando Ollama..."
@@ -91,31 +97,40 @@ else
     echo "✅ Servicio Ollama ya está corriendo"
 fi
 
-# Verificar si los modelos están descargados
+# Verificar si los modelos están descargados (SIN restricciones)
 echo ""
-echo "🔍 Verificando modelos..."
+echo "🔍 Verificando modelos (sin restricciones de seguridad)..."
+echo "   Modelos seleccionados:"
+echo "   - Principal: $LLAMA_MODEL (sin restricciones)"
+echo "   - Código: $DEEPSEEK_MODEL (sin restricciones)"
+echo ""
 MODELS=$(ollama list 2>/dev/null | grep -E "$LLAMA_MODEL|$DEEPSEEK_MODEL" || echo "")
 
 if ! echo "$MODELS" | grep -q "$LLAMA_MODEL"; then
-    echo "📥 Descargando modelo Llama: $LLAMA_MODEL"
+    echo "📥 Descargando modelo principal: $LLAMA_MODEL"
     echo "   Esto puede tomar varios minutos la primera vez..."
     ollama pull "$LLAMA_MODEL"
     if [ $? -ne 0 ]; then
-        echo "⚠️  Error descargando modelo Llama"
-        echo "   Intenta manualmente: ollama pull $LLAMA_MODEL"
+        echo "⚠️  Error descargando modelo principal"
+        echo "   Intentando modelo alternativo: mistral:7b"
+        LLAMA_MODEL="mistral:7b"
+        ollama pull "$LLAMA_MODEL" || {
+            echo "❌ Error descargando modelo alternativo"
+            echo "   Intenta manualmente: ollama pull mistral:7b"
+        }
     else
-        echo "✅ Modelo Llama descargado"
+        echo "✅ Modelo principal descargado"
     fi
 else
-    echo "✅ Modelo Llama ya está disponible"
+    echo "✅ Modelo principal ya está disponible"
 fi
 
 if ! echo "$MODELS" | grep -q "$DEEPSEEK_MODEL"; then
-    echo "📥 Descargando modelo DeepSeek: $DEEPSEEK_MODEL"
+    echo "📥 Descargando modelo de código: $DEEPSEEK_MODEL"
     echo "   Esto puede tomar varios minutos la primera vez..."
     ollama pull "$DEEPSEEK_MODEL"
     if [ $? -ne 0 ]; then
-        echo "⚠️  Error descargando modelo DeepSeek"
+        echo "⚠️  Error descargando modelo de código"
         echo "   Intenta manualmente: ollama pull $DEEPSEEK_MODEL"
     else
         echo "✅ Modelo DeepSeek descargado"
