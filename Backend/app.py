@@ -351,15 +351,38 @@ Historial de conversación relevante: {str(history[-3:]) if history else 'Ningun
     return response
 
 def run_system_command(command):
-    """Ejecuta un comando del sistema directamente"""
+    """Ejecuta un comando del sistema directamente, con soporte para sudo"""
     try:
+        # Detectar si el comando ya incluye sudo
+        command_str = command if isinstance(command, str) else ' '.join(command)
+        
+        # Si el comando requiere permisos elevados pero no tiene sudo, agregarlo
+        commands_requiring_root = ['nmap', 'ss', 'tcpdump', 'netstat', 'iptables', 
+                                   'systemctl', 'service', 'journalctl', 'ps aux',
+                                   'lsof', 'fuser', 'killall']
+        
+        needs_sudo = False
+        if not command_str.startswith('sudo '):
+            for cmd in commands_requiring_root:
+                if command_str.strip().startswith(cmd):
+                    needs_sudo = True
+                    break
+        
+        # Ejecutar con sudo si es necesario (usando sudo sin contraseña si está configurado)
+        if needs_sudo and not command_str.startswith('sudo '):
+            command_str = f"sudo {command_str}"
+            logger.info(f"Agregando sudo al comando: {command_str}")
+        
         result = subprocess.run(
-            command,
+            command_str,
             shell=True,
             capture_output=True,
             text=True,
-            timeout=60
+            timeout=60,
+            # Permitir ejecutar como root si es necesario
+            env=os.environ.copy()
         )
+        
         return {
             'success': result.returncode == 0,
             'output': result.stdout,
