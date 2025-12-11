@@ -7,33 +7,90 @@ echo ""
 
 # Verificar si vLLM está corriendo
 VLLM_PID=""
+LLAMA_MODEL="meta-llama/Llama-3.1-8B-Instruct"
+
 echo "🔍 Verificando vLLM..."
 if ! curl -s http://localhost:8000/v1/models > /dev/null 2>&1; then
-    echo "⚠️  Advertencia: vLLM no parece estar corriendo"
-    echo "   Ejecuta primero: python3 Backend/setup_models.py"
-    echo "   O inicia vLLM manualmente: vllm serve meta-llama/Llama-3.1-8B-Instruct"
+    echo "⚠️  vLLM no está corriendo"
     echo ""
-    echo "   ¿Quieres iniciar vLLM ahora? (s/n)"
-    read -r respuesta
-    if [ "$respuesta" = "s" ]; then
-        echo "🚀 Iniciando vLLM..."
-        echo "   Esto puede tomar varios minutos la primera vez..."
-        # Iniciar vLLM directamente en lugar de usar setup_models.py
-        vllm serve meta-llama/Llama-3.1-8B-Instruct > /tmp/vllm.log 2>&1 &
-        VLLM_PID=$!
-        echo "⏳ Esperando a que vLLM esté listo (esto puede tomar varios minutos)..."
-        # Esperar hasta que vLLM responda
-        for i in {1..60}; do
-            sleep 5
-            if curl -s http://localhost:8000/v1/models > /dev/null 2>&1; then
-                echo "✅ vLLM está listo!"
-                break
+    
+    # Verificar si huggingface-cli está instalado
+    if ! command -v huggingface-cli &> /dev/null; then
+        echo "📦 Instalando huggingface_hub..."
+        pip install --quiet huggingface_hub
+    fi
+    
+    # Verificar si el usuario está logueado en Hugging Face
+    HF_TOKEN_FILE="$HOME/.huggingface/token"
+    if [ ! -f "$HF_TOKEN_FILE" ]; then
+        echo "🔐 No estás autenticado en Hugging Face"
+        echo "   Se necesitan credenciales para descargar los modelos"
+        echo ""
+        read -p "   Email de Hugging Face: " HF_EMAIL
+        read -sp "   Contraseña: " HF_PASSWORD
+        echo ""
+        echo ""
+        echo "🔑 Autenticando en Hugging Face..."
+        
+        # Intentar login con huggingface-cli
+        echo "$HF_PASSWORD" | huggingface-cli login --username "$HF_EMAIL" --password-stdin 2>&1
+        
+        if [ $? -ne 0 ]; then
+            echo "⚠️  Error en la autenticación. Intentando método alternativo..."
+            # Método alternativo: usar token directamente si tienen uno
+            echo "   Si tienes un token de Hugging Face, puedes usarlo:"
+            read -sp "   Token de Hugging Face (o Enter para continuar sin token): " HF_TOKEN
+            echo ""
+            if [ ! -z "$HF_TOKEN" ]; then
+                echo "$HF_TOKEN" > "$HF_TOKEN_FILE"
+                mkdir -p "$HOME/.huggingface"
+                echo "✅ Token guardado"
             fi
-            echo "   Esperando... ($i/60)"
-        done
+        else
+            echo "✅ Autenticación exitosa"
+        fi
     else
-        echo "   Por favor inicia vLLM antes de continuar"
-        exit 1
+        echo "✅ Ya estás autenticado en Hugging Face"
+    fi
+    
+    echo ""
+    echo "🚀 Iniciando vLLM con modelo: $LLAMA_MODEL"
+    echo "   Esto puede tomar varios minutos la primera vez (descargará el modelo)..."
+    echo ""
+    
+    # Iniciar vLLM en background
+    vllm serve "$LLAMA_MODEL" > /tmp/vllm.log 2>&1 &
+    VLLM_PID=$!
+    
+    echo "⏳ Esperando a que vLLM esté listo..."
+    echo "   (Revisa /tmp/vllm.log para ver el progreso de descarga)"
+    echo ""
+    
+    # Esperar hasta que vLLM responda (más tiempo para la primera descarga)
+    for i in {1..120}; do
+        sleep 5
+        if curl -s http://localhost:8000/v1/models > /dev/null 2>&1; then
+            echo "✅ vLLM está listo!"
+            break
+        fi
+        if [ $((i % 6)) -eq 0 ]; then
+            echo "   Esperando... ($i/120) - Esto puede tardar si es la primera descarga"
+        fi
+    done
+    
+    # Verificar si vLLM está corriendo después de la espera
+    if ! curl -s http://localhost:8000/v1/models > /dev/null 2>&1; then
+        echo ""
+        echo "⚠️  vLLM no respondió después de esperar"
+        echo "   Revisa los logs en /tmp/vllm.log para ver qué pasó"
+        echo "   Puede que el modelo esté descargándose aún..."
+        echo ""
+        echo "   ¿Quieres continuar de todas formas? (s/n)"
+        read -r continuar
+        if [ "$continuar" != "s" ]; then
+            kill $VLLM_PID 2>/dev/null
+            exit 1
+        fi
     fi
 else
     echo "✅ vLLM está corriendo"
