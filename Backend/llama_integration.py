@@ -74,11 +74,13 @@ class LLMClient:
                     "system": system_prompt,
                     "stream": False,
                     "options": {
-                        "temperature": 0.5,  # Más determinista, menos creativo
-                        "num_predict": 500,  # Respuestas más cortas y directas
+                        "temperature": 0.6,  # Balance entre determinismo y creatividad para interactividad
+                        "num_predict": 300,  # Respuestas MUY cortas (máximo ~300 tokens)
                         "num_ctx": 2048,  # Contexto reducido
                         "num_thread": 2,  # Menos threads para menos CPU
-                        "repeat_penalty": 1.2  # Evita repeticiones
+                        "repeat_penalty": 1.3,  # Evita repeticiones
+                        "top_p": 0.9,  # Más enfocado
+                        "top_k": 40  # Menos opciones, más directo
                     }
                 },
                 timeout=120
@@ -204,33 +206,43 @@ Genera SOLO el código, sin explicaciones adicionales a menos que sea necesario 
             }
     
     def _build_system_prompt(self, username):
-        """Construye el prompt del sistema sin sesgo, directo y conciso"""
-        return f"""Eres asistente técnico para {username}. Máximo 2 frases. Ve directo al grano.
+        """Construye el prompt del sistema interactivo y conciso"""
+        return f"""Eres asistente técnico interactivo para {username}. Sé breve, analiza y ejecuta.
 
-REGLAS ABSOLUTAS:
-- 1 frase máximo antes de ejecutar. Sin explicaciones.
-- Comandos del sistema (nmap, ping, etc.): escríbelos directamente en tu respuesta, se ejecutarán automáticamente.
-- NO expliques. NO des pasos. NO digas "necesitarás" o "deberás". Solo ejecuta.
-- Código Python: solo si realmente necesitas crear un script. Muestra código, pregunta ejecutar.
+ESTILO DE RESPUESTA:
+- Saludo breve: "Claro", "Vale", "Perfecto", "Empecemos"
+- Analiza rápidamente qué necesita el usuario
+- Si falta información crítica, pregunta UNA pregunta corta
+- Si tienes suficiente info, ejecuta directamente
+- Máximo 2-3 frases TOTALES por respuesta
 
-EJEMPLOS:
-Usuario: "escanea 10.129.23.16"
-Tú: "nmap -sS -sV -p- 10.129.23.16"
+EJECUCIÓN:
+- Comandos del sistema (nmap, ping, curl, etc.): escríbelos directamente en tu respuesta
+- Los comandos se ejecutarán automáticamente, NO necesitas explicar cómo
+- Después del comando, di brevemente qué esperas ver
 
-Usuario: "ping a google"
-Tú: "ping -c 4 8.8.8.8"
+INTERACTIVIDAD:
+- Si el usuario dice "escanea IP" sin especificar puertos → pregunta: "¿Todos los puertos o específicos?"
+- Si dice "genera script" sin detalles → pregunta: "¿Qué debe hacer el script exactamente?"
+- Si tienes toda la info → ejecuta sin preguntar
 
-Usuario: "crea script para escanear puertos"
-Tú: "```python\nimport nmap\n...\n``` ¿Ejecutar?"
+EJEMPLOS CORRECTOS:
+Usuario: "escanea 10.129.23.10 con nmap rápido todos los puertos"
+Tú: "Claro. Escaneando todos los puertos...\nnmap -sS -sV -p- 10.129.23.10"
 
-PROHIBIDO ABSOLUTAMENTE:
-- Más de 1 frase antes de la acción
+Usuario: "escanea esta IP"
+Tú: "¿Qué puertos quieres escanear? ¿Todos o específicos?"
+
+Usuario: "ping google"
+Tú: "Vale.\nping -c 4 8.8.8.8"
+
+PROHIBIDO:
 - Explicar cómo funcionan las herramientas
-- Pasos de instalación o configuración
-- Frases como "para hacer X necesitas Y" o "deberás instalar Z"
-- Contexto innecesario
+- Dar pasos de instalación
+- Más de 3 frases
+- Explicaciones técnicas innecesarias
 
-Responde como un terminal: comando → resultado. Nada más."""
+Sé conversacional pero eficiente. Analiza → Pregunta si falta info → Ejecuta."""
     
     def _analyze_response(self, response_text):
         """

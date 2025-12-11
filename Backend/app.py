@@ -295,18 +295,26 @@ def process_with_llama(message, username, conversation_id):
     
     # Si detecta comandos del sistema, ejecutarlos directamente
     if response.get('needs_code') and response.get('is_system_command'):
-        logger.info(f"Ejecutando comando del sistema: {response.get('code')}")
+        command = response.get('code')
+        logger.info(f"Ejecutando comando del sistema: {command}")
         try:
-            command_result = run_system_command(response.get('code'))
+            command_result = run_system_command(command)
             if command_result.get('success'):
-                response['content'] += f"\n\n✅ Resultado:\n{command_result.get('output', '')}"
+                output = command_result.get('output', '').strip()
+                if output:
+                    # Agregar resultado de forma concisa
+                    response['content'] = response['content'].split('\n')[0]  # Mantener solo la primera frase
+                    response['content'] += f"\n\n{output}"
+                else:
+                    response['content'] += "\n✅ Comando ejecutado"
             else:
-                response['content'] += f"\n\n❌ Error: {command_result.get('error', 'Error desconocido')}"
+                error = command_result.get('error', 'Error desconocido')
+                response['content'] += f"\n❌ {error}"
             # No necesita código para ejecutar, ya se ejecutó
             response['needs_code'] = False
         except Exception as e:
             logger.error(f"Error ejecutando comando: {str(e)}")
-            response['content'] += f"\n\n❌ Error ejecutando comando: {str(e)}"
+            response['content'] += f"\n❌ Error: {str(e)}"
             response['needs_code'] = False
     
     # Si necesita DeepSeek para generar código
