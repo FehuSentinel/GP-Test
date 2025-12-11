@@ -23,8 +23,24 @@ Aplicación de chat IA local con Llama y DeepSeek usando vLLM, diseñada para us
 - Cuenta de Hugging Face (para descargar modelos)
 
 ### Frontend
-- Node.js 16+
-- npm o yarn
+- Node.js 16+ (y npm que viene incluido)
+  
+  **Instalación en Kali Linux:**
+  ```bash
+  # Opción 1: Usando NodeSource
+  curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+  sudo apt-get install -y nodejs
+  
+  # Opción 2: Usando nvm (recomendado)
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+  source ~/.bashrc
+  nvm install 18
+  nvm use 18
+  
+  # Verificar instalación
+  node --version
+  npm --version
+  ```
 
 ## Instalación
 

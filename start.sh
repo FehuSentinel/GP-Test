@@ -64,6 +64,36 @@ pip install -r requirements.txt
 
 cd ..
 
+# Verificar Node.js y npm
+echo "🔍 Verificando Node.js y npm..."
+if ! command -v node &> /dev/null; then
+    echo "❌ Node.js no está instalado"
+    echo ""
+    echo "📋 Para instalar Node.js en Kali Linux:"
+    echo "   1. curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -"
+    echo "   2. sudo apt-get install -y nodejs"
+    echo ""
+    echo "   O usando nvm:"
+    echo "   1. curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash"
+    echo "   2. source ~/.bashrc"
+    echo "   3. nvm install 18"
+    echo ""
+    exit 1
+fi
+
+if ! command -v npm &> /dev/null; then
+    echo "❌ npm no está instalado"
+    echo ""
+    echo "📋 npm generalmente viene con Node.js."
+    echo "   Si Node.js está instalado pero npm no, intenta:"
+    echo "   sudo apt-get install npm"
+    echo ""
+    exit 1
+fi
+
+echo "✅ Node.js $(node --version) y npm $(npm --version) detectados"
+echo ""
+
 # Configurar frontend
 echo "🔧 Configurando frontend React..."
 cd Frontend
@@ -72,6 +102,12 @@ cd Frontend
 if [ ! -d "node_modules" ]; then
     echo "📦 Instalando dependencias del frontend..."
     npm install
+    if [ $? -ne 0 ]; then
+        echo "❌ Error instalando dependencias del frontend"
+        echo "   Intenta ejecutar manualmente: cd Frontend && npm install"
+        cd ..
+        exit 1
+    fi
 else
     echo "✅ Dependencias del frontend ya instaladas"
 fi
@@ -94,8 +130,13 @@ sleep 3
 # Iniciar frontend
 echo "🚀 Iniciando frontend React..."
 cd Frontend
-npm start &
-FRONTEND_PID=$!
+if command -v npm &> /dev/null; then
+    npm start &
+    FRONTEND_PID=$!
+else
+    echo "❌ npm no disponible para iniciar el frontend"
+    FRONTEND_PID=""
+fi
 cd ..
 
 echo ""
@@ -109,7 +150,10 @@ echo "Presiona Ctrl+C para detener ambos servicios"
 cleanup() {
     echo ""
     echo "🛑 Deteniendo servicios..."
-    kill $BACKEND_PID $FRONTEND_PID 2>/dev/null
+    kill $BACKEND_PID 2>/dev/null
+    if [ ! -z "$FRONTEND_PID" ]; then
+        kill $FRONTEND_PID 2>/dev/null
+    fi
     if [ ! -z "$VLLM_PID" ]; then
         kill $VLLM_PID 2>/dev/null
     fi
