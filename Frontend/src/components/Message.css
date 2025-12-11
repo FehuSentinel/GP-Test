@@ -37,11 +37,11 @@
 }
 
 .message.user .message-content {
-  background: linear-gradient(135deg, rgba(0, 217, 255, 0.2), rgba(0, 255, 65, 0.2));
-  border: 1px solid var(--cyber-blue);
-  color: var(--cyber-blue);
+  background: linear-gradient(135deg, rgba(74, 144, 226, 0.15), rgba(107, 127, 216, 0.15));
+  border: 1px solid var(--accent-primary);
+  color: var(--text-secondary);
   border-bottom-right-radius: 4px;
-  box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+  box-shadow: 0 0 12px rgba(74, 144, 226, 0.25);
 }
 
 .message.user .message-content::before {
@@ -50,7 +50,7 @@
   top: -8px;
   left: 8px;
   font-size: 10px;
-  color: var(--cyber-blue);
+  color: var(--accent-primary);
   font-weight: bold;
   letter-spacing: 1px;
   background-color: var(--bg-primary);
@@ -58,11 +58,11 @@
 }
 
 .message.assistant .message-content {
-  background: linear-gradient(135deg, rgba(0, 255, 65, 0.1), rgba(157, 0, 255, 0.1));
-  border: 1px solid var(--cyber-green);
+  background: linear-gradient(135deg, rgba(74, 144, 226, 0.08), rgba(124, 58, 237, 0.08));
+  border: 1px solid var(--accent-secondary);
   color: var(--text-secondary);
   border-bottom-left-radius: 4px;
-  box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
+  box-shadow: 0 0 12px rgba(107, 127, 216, 0.15);
 }
 
 .message.assistant .message-content::before {
@@ -71,7 +71,7 @@
   top: -8px;
   left: 8px;
   font-size: 10px;
-  color: var(--cyber-green);
+  color: var(--accent-secondary);
   font-weight: bold;
   letter-spacing: 1px;
   background-color: var(--bg-primary);
@@ -79,12 +79,12 @@
 }
 
 .message.system .message-content {
-  background-color: rgba(255, 170, 0, 0.1);
-  border: 1px solid var(--cyber-yellow);
-  color: var(--cyber-yellow);
+  background-color: rgba(214, 158, 46, 0.08);
+  border: 1px solid var(--accent-yellow);
+  color: var(--accent-yellow);
   font-size: 14px;
   max-width: 90%;
-  box-shadow: 0 0 10px rgba(255, 170, 0, 0.2);
+  box-shadow: 0 0 8px rgba(214, 158, 46, 0.15);
 }
 
 .message.system .message-content::before {
@@ -93,7 +93,7 @@
   top: -8px;
   left: 8px;
   font-size: 10px;
-  color: var(--cyber-yellow);
+  color: var(--accent-yellow);
   font-weight: bold;
   letter-spacing: 1px;
   background-color: var(--bg-primary);
@@ -108,12 +108,12 @@
 
 .code-block {
   background-color: var(--bg-secondary);
-  border: 2px solid var(--cyber-green);
+  border: 2px solid var(--accent-primary);
   border-radius: 4px;
   padding: 12px;
   margin: 10px 0;
   overflow-x: auto;
-  box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+  box-shadow: 0 0 15px rgba(74, 144, 226, 0.15);
   position: relative;
 }
 
@@ -123,7 +123,7 @@
   top: -8px;
   left: 8px;
   font-size: 10px;
-  color: var(--cyber-green);
+  color: var(--accent-primary);
   font-weight: bold;
   letter-spacing: 1px;
   background-color: var(--bg-secondary);
@@ -131,9 +131,9 @@
 }
 
 .code-block code {
-  color: var(--cyber-green-light);
+  color: var(--text-secondary);
   font-family: 'Courier New', 'Consolas', monospace;
   font-size: 14px;
   line-height: 1.5;
-  text-shadow: 0 0 5px rgba(0, 255, 65, 0.3);
+  text-shadow: 0 0 3px rgba(74, 144, 226, 0.2);
 }

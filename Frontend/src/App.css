@@ -6,7 +6,7 @@
   position: relative;
 }
 
-/* Efecto de escaneo/scanline opcional */
+/* Efecto de escaneo/scanline opcional (reducido) */
 .app::before {
   content: '';
   position: fixed;
@@ -17,9 +17,9 @@
   pointer-events: none;
   background: linear-gradient(
     transparent 50%,
-    rgba(0, 255, 65, 0.02) 50%
+    rgba(74, 144, 226, 0.01) 50%
   );
   background-size: 100% 4px;
   z-index: 9999;
-  opacity: 0.3;
+  opacity: 0.2;
 }

@@ -47,7 +47,7 @@ function Sidebar({ currentConversation, onSelectConversation }) {
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <h2>Chat IA Local</h2>
+        <h2>GP-Test</h2>
         <button className="new-chat-btn" onClick={handleNewConversation}>
           + Nueva conversación
         </button>

@@ -1,8 +1,8 @@
 .message-input-container {
   padding: 20px;
-  border-top: 2px solid var(--cyber-green);
+  border-top: 2px solid var(--accent-primary);
   background-color: var(--bg-secondary);
-  box-shadow: 0 -2px 10px rgba(0, 255, 65, 0.1);
+  box-shadow: 0 -2px 8px rgba(74, 144, 226, 0.08);
 }
 
 .message-input-form {
@@ -15,9 +15,9 @@
   flex: 1;
   padding: 12px;
   background-color: var(--bg-primary);
-  border: 2px solid var(--cyber-green);
+  border: 2px solid var(--accent-primary);
   border-radius: 4px;
-  color: var(--cyber-green-light);
+  color: var(--text-secondary);
   font-family: 'Courier New', monospace;
   font-size: 14px;
   resize: none;
@@ -33,9 +33,9 @@
 
 .message-input:focus {
   outline: none;
-  border-color: var(--cyber-blue);
-  box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
-  background-color: rgba(0, 217, 255, 0.05);
+  border-color: var(--accent-secondary);
+  box-shadow: 0 0 15px rgba(107, 127, 216, 0.25);
+  background-color: rgba(107, 127, 216, 0.04);
 }
 
 .message-input:disabled {
@@ -47,8 +47,8 @@
 .send-button {
   padding: 12px 24px;
   background-color: transparent;
-  color: var(--cyber-green);
-  border: 2px solid var(--cyber-green);
+  color: var(--accent-primary);
+  border: 2px solid var(--accent-primary);
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
@@ -72,16 +72,16 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(0, 255, 65, 0.2),
+    rgba(74, 144, 226, 0.15),
     transparent
   );
   transition: left 0.5s;
 }
 
 .send-button:hover:not(:disabled) {
-  background-color: rgba(0, 255, 65, 0.1);
-  box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
-  text-shadow: 0 0 10px var(--cyber-green);
+  background-color: rgba(74, 144, 226, 0.08);
+  box-shadow: 0 0 15px rgba(74, 144, 226, 0.4);
+  text-shadow: 0 0 8px var(--accent-primary);
 }
 
 .send-button:hover:not(:disabled)::before {
