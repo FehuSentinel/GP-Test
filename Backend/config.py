@@ -6,12 +6,10 @@ import os
 # Configuración de la base de datos
 DB_PATH = os.getenv('DB_PATH', 'chat.db')
 
-# Configuración de Llama3B (Ollama)
-LLAMA_API_URL = os.getenv('LLAMA_API_URL', 'http://localhost:11434/api/generate')
-LLAMA_MODEL = os.getenv('LLAMA_MODEL', 'llama3.2')
-
-# Configuración de DeepSeek
-DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY', None)
+# Configuración de vLLM
+VLLM_API_URL = os.getenv('VLLM_API_URL', 'http://localhost:8000/v1/chat/completions')
+LLAMA_MODEL = os.getenv('LLAMA_MODEL', 'meta-llama/Llama-3.1-8B-Instruct')
+DEEPSEEK_MODEL = os.getenv('DEEPSEEK_MODEL', 'deepseek-ai/deepseek-coder-6.7b-instruct')
 
 # Configuración del servidor Flask
 FLASK_HOST = os.getenv('FLASK_HOST', '0.0.0.0')

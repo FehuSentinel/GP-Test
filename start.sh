@@ -5,12 +5,33 @@
 echo "=== Chat IA Local - Iniciando aplicación ==="
 echo ""
 
-# Verificar si Ollama está corriendo
-if ! pgrep -x "ollama" > /dev/null; then
-    echo "⚠️  Advertencia: Ollama no parece estar corriendo"
-    echo "   Inicia Ollama con: ollama serve"
+# Verificar si vLLM está corriendo
+VLLM_PID=""
+echo "🔍 Verificando vLLM..."
+if ! curl -s http://localhost:8000/v1/models > /dev/null 2>&1; then
+    echo "⚠️  Advertencia: vLLM no parece estar corriendo"
+    echo "   Ejecuta primero: python3 Backend/setup_models.py"
+    echo "   O inicia vLLM manualmente: vllm serve meta-llama/Llama-3.1-8B-Instruct"
     echo ""
+    echo "   ¿Quieres iniciar vLLM ahora? (s/n)"
+    read -r respuesta
+    if [ "$respuesta" = "s" ]; then
+        echo "🚀 Iniciando vLLM..."
+        cd Backend
+        source venv/bin/activate 2>/dev/null || true
+        python3 setup_models.py &
+        VLLM_PID=$!
+        cd ..
+        echo "⏳ Esperando a que vLLM esté listo..."
+        sleep 10
+    else
+        echo "   Por favor inicia vLLM antes de continuar"
+        exit 1
+    fi
+else
+    echo "✅ vLLM está corriendo"
 fi
+echo ""
 
 # Configurar backend
 echo "🔧 Configurando backend Flask..."
@@ -78,6 +99,15 @@ echo ""
 echo "Presiona Ctrl+C para detener ambos servicios"
 
 # Esperar a que el usuario presione Ctrl+C
-trap "kill $BACKEND_PID $FRONTEND_PID 2>/dev/null; exit" INT TERM
+cleanup() {
+    echo ""
+    echo "🛑 Deteniendo servicios..."
+    kill $BACKEND_PID $FRONTEND_PID 2>/dev/null
+    if [ ! -z "$VLLM_PID" ]; then
+        kill $VLLM_PID 2>/dev/null
+    fi
+    exit
+}
+trap cleanup INT TERM
 wait
 

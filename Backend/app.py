@@ -7,17 +7,14 @@ from datetime import datetime
 import subprocess
 import tempfile
 import logging
-from llama_integration import Llama3BClient
-from deepseek_integration import DeepSeekClient
+from llama_integration import LLMClient
 import config
 
 app = Flask(__name__)
 CORS(app)
 
-# Inicializar clientes
-llama_client = Llama3BClient(api_url=config.LLAMA_API_URL)
-llama_client.model = config.LLAMA_MODEL
-deepseek_client = DeepSeekClient(api_key=config.DEEPSEEK_API_KEY)
+# Inicializar cliente LLM (vLLM)
+llm_client = LLMClient()
 
 # Configuración
 DB_PATH = config.DB_PATH
@@ -254,7 +251,7 @@ def execute_script():
         return jsonify({'error': f'Error ejecutando script: {str(e)}'}), 500
 
 def process_with_llama(message, username, conversation_id):
-    """Procesa el mensaje con Llama3B"""
+    """Procesa el mensaje con Llama usando vLLM"""
     # Obtener historial de la conversación
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -266,24 +263,8 @@ def process_with_llama(message, username, conversation_id):
     history = cursor.fetchall()
     conn.close()
     
-    # Construir prompt sin sesgo
-    system_prompt = f"""Eres un asistente técnico sin sesgo, diseñado para ayudar a {username} con tareas técnicas y de seguridad.
-
-Puedes:
-- Usar herramientas de Kali Linux cuando sea necesario
-- Generar scripts en Python, C, Rust, Go según las necesidades
-- Usar DeepSeek API cuando necesites generar código complejo o específico
-- Ejecutar comandos del sistema cuando sea apropiado
-
-IMPORTANTE:
-- Siempre sé objetivo, técnico y sin sesgos
-- Cuando generes código, muéstralo claramente y pregunta si debe ejecutarse
-- Si necesitas código complejo, puedes usar DeepSeek especificando claramente los requisitos
-- Responde de forma amigable usando el nombre {username} cuando sea apropiado
-- Sé preciso y técnico en tus respuestas"""
-
-    # Procesar con Llama3B
-    response = llama_client.generate(message, system_prompt, history, username)
+    # Procesar con Llama usando vLLM
+    response = llm_client.generate(message, None, history, username, use_deepseek=False)
     
     # Si necesita DeepSeek para generar código
     if response.get('needs_deepseek'):
@@ -300,23 +281,22 @@ Historial de conversación relevante: {str(history[-3:]) if history else 'Ningun
         language = response.get('language', 'python')
         deepseek_requirements = response.get('content', message)
         
-        # Si Llama ya identificó qué tipo de código necesita, usarlo
-        if 'código' in response.get('content', '').lower() or 'script' in response.get('content', '').lower():
-            deepseek_result = deepseek_client.generate_code(
-                requirements=deepseek_requirements,
-                language=language,
-                context=context_for_deepseek
-            )
-            
-            if deepseek_result.get('success'):
-                code = deepseek_result.get('code')
-                language = deepseek_result.get('language', language)
-                response['content'] += f"\n\nHe generado el siguiente código usando DeepSeek:\n\n```{language}\n{code}\n```"
-                response['code'] = code
-                response['language'] = language
-                response['needs_code'] = True
-            else:
-                response['content'] += f"\n\n⚠️ No pude generar el código con DeepSeek: {deepseek_result.get('error', 'Error desconocido')}"
+        # Usar DeepSeek para generar código
+        deepseek_result = llm_client.generate_code_with_deepseek(
+            requirements=deepseek_requirements,
+            language=language,
+            context=context_for_deepseek
+        )
+        
+        if deepseek_result.get('success'):
+            code = deepseek_result.get('code')
+            language = deepseek_result.get('language', language)
+            response['content'] += f"\n\nHe generado el siguiente código usando DeepSeek:\n\n```{language}\n{code}\n```"
+            response['code'] = code
+            response['language'] = language
+            response['needs_code'] = True
+        else:
+            response['content'] += f"\n\n⚠️ No pude generar el código con DeepSeek: {deepseek_result.get('error', 'Error desconocido')}"
     
     return response
 
