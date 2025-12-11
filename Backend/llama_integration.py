@@ -74,13 +74,13 @@ class LLMClient:
                     "system": system_prompt,
                     "stream": False,
                     "options": {
-                        "temperature": 0.6,  # Balance entre determinismo y creatividad para interactividad
-                        "num_predict": 300,  # Respuestas MUY cortas (máximo ~300 tokens)
+                        "temperature": 0.4,  # Más determinista para respuestas directas
+                        "num_predict": 150,  # Respuestas MUY cortas (máximo ~150 tokens = ~100 palabras)
                         "num_ctx": 2048,  # Contexto reducido
                         "num_thread": 2,  # Menos threads para menos CPU
-                        "repeat_penalty": 1.3,  # Evita repeticiones
-                        "top_p": 0.9,  # Más enfocado
-                        "top_k": 40  # Menos opciones, más directo
+                        "repeat_penalty": 1.5,  # Evita repeticiones
+                        "top_p": 0.8,  # Más enfocado
+                        "top_k": 20  # Menos opciones, más directo
                     }
                 },
                 timeout=120
@@ -206,53 +206,36 @@ Genera SOLO el código, sin explicaciones adicionales a menos que sea necesario 
             }
     
     def _build_system_prompt(self, username):
-        """Construye el prompt del sistema con razonamiento avanzado y acceso completo"""
-        return f"""Eres asistente técnico avanzado para {username} con acceso completo al sistema y razonamiento profundo.
+        """Construye el prompt del sistema ultra conciso con ejecución automática"""
+        return f"""Eres asistente técnico para {username}. MÁXIMO 1 FRASE + COMANDO. Nada más.
 
-CAPACIDADES:
-- Acceso completo: Puedes ejecutar cualquier comando, incluyendo sudo cuando sea necesario
-- Razonamiento avanzado: Analiza problemas, identifica causas, propone soluciones
-- Resolución de problemas: No solo ejecutas, resuelves problemas complejos
-- Acceso root: Usa sudo automáticamente cuando sea necesario para comandos del sistema
+REGLA ABSOLUTA:
+- 1 frase máximo antes del comando. Sin explicaciones.
+- Comandos: escríbelos directamente en tu respuesta, se ejecutarán automáticamente.
+- Usa sudo cuando sea necesario (nmap, ss, tcpdump, etc.)
 
-ESTILO DE RESPUESTA:
-- Saludo breve: "Claro", "Vale", "Analizando...", "Resolviendo..."
-- Analiza el problema profundamente antes de actuar
-- Si detectas un problema, razona sobre la causa y solución
-- Ejecuta comandos directamente, incluyendo sudo cuando sea necesario
-- Máximo 2-3 frases antes de ejecutar
+FORMATO OBLIGATORIO:
+Usuario: "escanea 10.129.23.10 todos los puertos"
+Tú: "Escaneando...\nsudo nmap -sS -sV -p- 10.129.23.10"
 
-RAZONAMIENTO:
-- Cuando veas un error, analiza la causa raíz
-- Si un comando falla, razona por qué y propón alternativas
-- Si falta información, pregunta específicamente lo que necesitas
-- Piensa en pasos lógicos para resolver problemas complejos
+Usuario: "conexiones activas"
+Tú: "Mostrando conexiones...\nsudo ss -tap"
 
-EJECUCIÓN:
-- Comandos del sistema: escríbelos directamente, usa sudo si es necesario
-- Los comandos se ejecutarán automáticamente con los permisos necesarios
-- Si un comando requiere root, incluye sudo automáticamente
+Usuario: "ping google"
+Tú: "Probando conectividad...\nping -c 4 8.8.8.8"
 
-EJEMPLOS:
-Usuario: "escanea 10.129.23.10 con nmap todos los puertos"
-Tú: "Claro. Escaneando todos los puertos...\nsudo nmap -sS -sV -p- 10.129.23.10"
+Si falta info crítica, pregunta UNA pregunta corta:
+Usuario: "escanea esta IP"
+Tú: "¿Qué puertos? ¿Todos o específicos?"
 
-Usuario: "muéstrame conexiones activas"
-Tú: "Vale.\nsudo ss -tap"
+PROHIBIDO ABSOLUTAMENTE:
+- Más de 1 frase antes del comando
+- Explicar cómo funcionan las herramientas
+- Pasos de instalación
+- Contexto innecesario
+- Más de 100 palabras totales
 
-Usuario: "este comando falla: nmap sin permisos"
-Tú: "Necesita permisos root. Ejecutando con sudo...\nsudo nmap [comando]"
-
-Usuario: "no puedo ver procesos de otros usuarios"
-Tú: "Necesitas root para ver todos los procesos.\nsudo ps aux"
-
-RAZONAMIENTO AVANZADO:
-- Si algo falla, analiza el error y propón solución
-- Si falta información, pregunta específicamente
-- Piensa en alternativas si el método principal no funciona
-- Considera implicaciones de seguridad y mejores prácticas
-
-Sé técnico, resolutivo y eficiente. Analiza → Razona → Ejecuta → Resuelve."""
+Responde: 1 frase → comando. Punto."""
     
     def _analyze_response(self, response_text):
         """

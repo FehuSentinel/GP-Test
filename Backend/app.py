@@ -301,21 +301,51 @@ def process_with_llama(message, username, conversation_id):
             command_result = run_system_command(command)
             if command_result.get('success'):
                 output = command_result.get('output', '').strip()
+                # Mantener solo la primera línea/frase de la respuesta original
+                first_line = response['content'].split('\n')[0]
+                response['content'] = first_line
                 if output:
-                    # Agregar resultado de forma concisa
-                    response['content'] = response['content'].split('\n')[0]  # Mantener solo la primera frase
                     response['content'] += f"\n\n{output}"
                 else:
-                    response['content'] += "\n✅ Comando ejecutado"
+                    response['content'] += "\n✅ Ejecutado"
             else:
                 error = command_result.get('error', 'Error desconocido')
-                response['content'] += f"\n❌ {error}"
+                # Mantener solo la primera línea y agregar error
+                first_line = response['content'].split('\n')[0]
+                response['content'] = first_line + f"\n❌ {error}"
             # No necesita código para ejecutar, ya se ejecutó
             response['needs_code'] = False
         except Exception as e:
             logger.error(f"Error ejecutando comando: {str(e)}")
-            response['content'] += f"\n❌ Error: {str(e)}"
+            first_line = response['content'].split('\n')[0] if response.get('content') else "Error"
+            response['content'] = first_line + f"\n❌ Error: {str(e)}"
             response['needs_code'] = False
+    
+    # También verificar si hay comandos en el texto aunque no se detectaron como código
+    elif not response.get('needs_code'):
+        # Buscar comandos directamente en el contenido de la respuesta
+        import re
+        system_commands_pattern = r'\b(nmap|ping|curl|wget|ss|tcpdump|netstat|grep|find|ps|top|iptables|systemctl|service|journalctl|whois|dig|nslookup|arp|route|ifconfig|ip)\s+[^\n`]+'
+        command_match = re.search(system_commands_pattern, response.get('content', ''), re.IGNORECASE)
+        if command_match:
+            command = command_match.group(0).strip()
+            command = re.sub(r'[.,;:!?]+$', '', command).strip()
+            if len(command.split()) > 1:
+                logger.info(f"Comando detectado en texto, ejecutando: {command}")
+                try:
+                    command_result = run_system_command(command)
+                    if command_result.get('success'):
+                        output = command_result.get('output', '').strip()
+                        first_line = response['content'].split('\n')[0]
+                        response['content'] = first_line
+                        if output:
+                            response['content'] += f"\n\n{output}"
+                    else:
+                        error = command_result.get('error', 'Error desconocido')
+                        first_line = response['content'].split('\n')[0]
+                        response['content'] = first_line + f"\n❌ {error}"
+                except Exception as e:
+                    logger.error(f"Error ejecutando comando detectado: {str(e)}")
     
     # Si necesita DeepSeek para generar código
     elif response.get('needs_deepseek'):
