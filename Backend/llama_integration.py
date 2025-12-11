@@ -1,5 +1,5 @@
 """
-Integración con modelos LLM usando vLLM (formato OpenAI API)
+Integración con modelos LLM usando Ollama (más estable que vLLM)
 Soporta Llama y DeepSeek localmente
 """
 import logging
@@ -10,17 +10,19 @@ import re
 logger = logging.getLogger(__name__)
 
 class LLMClient:
-    def __init__(self, api_url=None, llama_model=None, deepseek_model=None):
+    def __init__(self, api_url=None, chat_url=None, llama_model=None, deepseek_model=None):
         """
-        Inicializa el cliente LLM usando vLLM
+        Inicializa el cliente LLM usando Ollama
         
         Args:
-            api_url: URL del servidor vLLM
+            api_url: URL del servidor Ollama para generate
+            chat_url: URL del servidor Ollama para chat
             llama_model: Modelo de Llama a usar
             deepseek_model: Modelo de DeepSeek a usar
         """
         import config
-        self.api_url = api_url or config.VLLM_API_URL
+        self.api_url = api_url or config.OLLAMA_API_URL
+        self.chat_url = chat_url or config.OLLAMA_CHAT_URL
         self.llama_model = llama_model or config.LLAMA_MODEL
         self.deepseek_model = deepseek_model or config.DEEPSEEK_MODEL
     
@@ -40,17 +42,12 @@ class LLMClient:
         """
         model = self.deepseek_model if use_deepseek else self.llama_model
         
-        # Construir mensajes en formato OpenAI
+        # Construir mensajes en formato Ollama
         messages = []
         
         # System prompt
-        if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-        else:
-            messages.append({
-                "role": "system",
-                "content": self._build_system_prompt(username)
-            })
+        if not system_prompt:
+            system_prompt = self._build_system_prompt(username)
         
         # Historial de conversación
         if history:
@@ -67,21 +64,25 @@ class LLMClient:
         })
         
         try:
-            # Llamada a vLLM (formato OpenAI API)
+            # Llamada a Ollama usando API de chat (más estable)
             response = requests.post(
-                self.api_url,
+                self.chat_url,
                 json={
                     "model": model,
                     "messages": messages,
-                    "temperature": 0.7,
-                    "max_tokens": 2000
+                    "system": system_prompt,
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.7,
+                        "num_predict": 2000
+                    }
                 },
                 timeout=120
             )
             
             if response.status_code == 200:
                 result = response.json()
-                response_text = result['choices'][0]['message']['content']
+                response_text = result.get('message', {}).get('content', '')
                 
                 # Analizar si la respuesta contiene código o necesita DeepSeek
                 needs_code, code_info = self._analyze_response(response_text)
@@ -94,7 +95,7 @@ class LLMClient:
                     'needs_deepseek': code_info.get('needs_deepseek', False)
                 }
             else:
-                logger.error(f"Error en llamada a vLLM: {response.status_code} - {response.text}")
+                logger.error(f"Error en llamada a Ollama: {response.status_code} - {response.text}")
                 return {
                     'content': f'Error al procesar la solicitud: {response.status_code}',
                     'needs_code': False,
@@ -102,9 +103,9 @@ class LLMClient:
                     'language': None
                 }
         except requests.exceptions.RequestException as e:
-            logger.error(f"Error de conexión con vLLM: {str(e)}")
+            logger.error(f"Error de conexión con Ollama: {str(e)}")
             return {
-                'content': f'Error de conexión con vLLM: {str(e)}. Asegúrate de que vLLM esté corriendo.',
+                'content': f'Error de conexión con Ollama: {str(e)}. Asegúrate de que Ollama esté corriendo (ollama serve).',
                 'needs_code': False,
                 'code': None,
                 'language': None
@@ -141,25 +142,28 @@ Genera SOLO el código, sin explicaciones adicionales a menos que sea necesario 
         system_prompt = "Eres un experto programador que genera código limpio, eficiente y seguro."
 
         messages = [
-            {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
         ]
 
         try:
             response = requests.post(
-                self.api_url,
+                self.chat_url,
                 json={
                     "model": self.deepseek_model,
                     "messages": messages,
-                    "temperature": 0.3,
-                    "max_tokens": 2000
+                    "system": system_prompt,
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.3,
+                        "num_predict": 2000
+                    }
                 },
                 timeout=60
             )
 
             if response.status_code == 200:
                 result = response.json()
-                code_content = result['choices'][0]['message']['content']
+                code_content = result.get('message', {}).get('content', '')
                 
                 # Extraer código si viene en bloques markdown
                 code_pattern = r'```(?:\w+)?\n?(.*?)```'
@@ -177,7 +181,7 @@ Genera SOLO el código, sin explicaciones adicionales a menos que sea necesario 
                     'raw_response': code_content
                 }
             else:
-                logger.error(f"Error en DeepSeek vLLM: {response.status_code} - {response.text}")
+                logger.error(f"Error en DeepSeek Ollama: {response.status_code} - {response.text}")
                 return {
                     'success': False,
                     'error': f'Error en DeepSeek: {response.status_code}',

@@ -1,14 +1,14 @@
-# Chat IA Local - Sin Sesgo
+# GP-Test - Chat IA Local Sin Sesgo
 
-Aplicación de chat IA local con Llama y DeepSeek usando vLLM, diseñada para uso técnico y de seguridad sin sesgos.
+Aplicación de chat IA local con Llama y DeepSeek usando Ollama, diseñada para uso técnico y de seguridad sin sesgos.
 
 ## Características
 
 - 💬 Interfaz de chat moderna estilo ChatGPT
-- 🧠 Integración con Llama local (vía vLLM)
-- 🤖 Integración con DeepSeek local (vía vLLM) para generación de código
+- 🧠 Integración con Llama local (vía Ollama - más estable)
+- 🤖 Integración con DeepSeek local (vía Ollama) para generación de código
 - 🔧 Generación y ejecución de scripts (Python, C, Rust, Go, Bash)
-- 📥 Descarga automática de modelos si no están disponibles
+- 📥 Descarga automática de modelos con Ollama
 - 💾 Base de datos SQLite local
 - 🎯 Prompt sin sesgo configurado
 - 👤 Personalización con nombre de usuario
@@ -19,8 +19,7 @@ Aplicación de chat IA local con Llama y DeepSeek usando vLLM, diseñada para us
 ### Backend
 - Python 3.8+
 - Flask
-- vLLM instalado
-- Cuenta de Hugging Face (para descargar modelos)
+- Ollama instalado (el script lo instala automáticamente)
 
 ### Frontend
 - Node.js 16+ (y npm que viene incluido)
@@ -44,16 +43,37 @@ Aplicación de chat IA local con Llama y DeepSeek usando vLLM, diseñada para us
 
 ## Instalación
 
-### 1. Instalar vLLM
+### Opción 1: Script automático (Recomendado)
 
 ```bash
-pip install vllm
+./start.sh
 ```
 
-### 2. Autenticarse en Hugging Face
+El script:
+- Instala Ollama automáticamente si no está instalado
+- Descarga los modelos necesarios (Llama y DeepSeek)
+- Configura el backend y frontend
+- Inicia todos los servicios
+
+### Opción 2: Manual
+
+#### 1. Instalar Ollama
 
 ```bash
-huggingface-cli login
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+#### 2. Iniciar Ollama
+
+```bash
+ollama serve
+```
+
+#### 3. Descargar modelos
+
+```bash
+ollama pull llama3.2
+ollama pull deepseek-coder
 ```
 
 ### 3. Instalar dependencias del Backend
@@ -76,12 +96,22 @@ npm install
 
 ### Modelos
 
-Los modelos se descargan automáticamente la primera vez que se usan. Los modelos por defecto son:
+Los modelos se descargan automáticamente con Ollama. Los modelos por defecto son:
 
-- **Llama**: `meta-llama/Llama-3.1-8B-Instruct`
-- **DeepSeek**: `deepseek-ai/deepseek-coder-6.7b-instruct`
+- **Llama**: `llama3.2`
+- **DeepSeek**: `deepseek-coder`
 
 Puedes cambiarlos en `Backend/config.py` o mediante variables de entorno.
+
+Para ver modelos disponibles:
+```bash
+ollama list
+```
+
+Para descargar otros modelos:
+```bash
+ollama pull nombre-del-modelo
+```
 
 ### Frontend
 
@@ -99,32 +129,20 @@ REACT_APP_API_URL=http://localhost:5000/api
 ```
 
 Este script:
-- Verifica si vLLM está corriendo
-- Instala dependencias automáticamente
-- Inicia backend y frontend
+- Instala Ollama automáticamente si no está instalado
+- Descarga los modelos necesarios
+- Configura backend y frontend
+- Inicia todos los servicios
 
 ### Opción 2: Manual
 
-#### 1. Iniciar vLLM
+#### 1. Iniciar Ollama
 
 ```bash
-# Con Llama (para chat general)
-vllm serve meta-llama/Llama-3.1-8B-Instruct
-
-# O con DeepSeek (para generación de código)
-vllm serve deepseek-ai/deepseek-coder-6.7b-instruct
+ollama serve
 ```
 
-**Nota**: vLLM solo puede cargar un modelo a la vez. Para cambiar de modelo, detén vLLM e inícialo con el otro modelo.
-
-#### 2. Verificar/Configurar modelos
-
-```bash
-cd Backend
-python3 setup_models.py
-```
-
-#### 3. Iniciar Backend
+#### 2. Iniciar Backend
 
 ```bash
 cd Backend
@@ -149,8 +167,7 @@ El frontend estará disponible en `http://localhost:3000`
 gp-test/
 ├── Backend/
 │   ├── app.py                 # Aplicación Flask principal
-│   ├── llama_integration.py   # Integración con Llama/DeepSeek vía vLLM
-│   ├── setup_models.py        # Script para verificar/descargar modelos
+│   ├── llama_integration.py   # Integración con Llama/DeepSeek vía Ollama
 │   ├── config.py              # Configuración
 │   ├── requirements.txt       # Dependencias Python
 │   └── chat.db               # Base de datos SQLite (se crea automáticamente)
@@ -177,10 +194,19 @@ gp-test/
 
 1. Usuario envía mensaje → Frontend
 2. Frontend → Backend Flask API
-3. Backend → Llama (vía vLLM)
-4. Si Llama necesita código complejo → DeepSeek (vía vLLM)
+3. Backend → Llama (vía Ollama)
+4. Si Llama necesita código complejo → DeepSeek (vía Ollama)
 5. Respuesta → Usuario
 6. Si hay código → Usuario decide si ejecutarlo
+
+## Ventajas de Ollama sobre vLLM
+
+- ✅ Más estable y confiable
+- ✅ Instalación más simple
+- ✅ Menor consumo de recursos
+- ✅ Descarga automática de modelos
+- ✅ No requiere autenticación en Hugging Face
+- ✅ Mejor manejo de errores
 
 ## Notas de Seguridad
 
@@ -188,19 +214,19 @@ gp-test/
 
 ## Troubleshooting
 
-### vLLM no inicia
-- Verifica que tengas suficiente RAM (recomendado: 16GB+)
-- Asegúrate de estar autenticado en Hugging Face: `huggingface-cli login`
-- Verifica que el modelo existe y tienes acceso
+### Ollama no inicia
+- Verifica que Ollama esté instalado: `ollama --version`
+- Inicia el servicio manualmente: `ollama serve`
+- Verifica los logs: `tail -f /tmp/ollama.log`
 
 ### Modelos no se descargan
 - Verifica tu conexión a internet
-- Asegúrate de estar autenticado en Hugging Face
-- Algunos modelos requieren solicitar acceso en Hugging Face
+- Intenta descargar manualmente: `ollama pull llama3.2`
+- Verifica modelos disponibles: `ollama list`
 
 ### Error de conexión
-- Verifica que vLLM esté corriendo en `http://localhost:8000`
-- Verifica que el modelo esté cargado correctamente
+- Verifica que Ollama esté corriendo: `curl http://localhost:11434/api/tags`
+- Reinicia Ollama: `pkill ollama && ollama serve`
 
 ## Licencia
 

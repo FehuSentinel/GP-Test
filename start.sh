@@ -1,125 +1,84 @@
 #!/bin/bash
 
-# Script para iniciar la aplicación completa
+# Script para iniciar la aplicación completa con Ollama
 
-echo "=== Chat IA Local - Iniciando aplicación ==="
+echo "=== GP-Test - Iniciando aplicación ==="
 echo ""
 
-# Verificar si vLLM está corriendo
-VLLM_PID=""
-LLAMA_MODEL="meta-llama/Llama-3.1-8B-Instruct"
+# Verificar e instalar Ollama
+OLLAMA_PID=""
+LLAMA_MODEL="llama3.2"
+DEEPSEEK_MODEL="deepseek-coder"
 
-echo "🔍 Verificando vLLM..."
-if ! curl -s http://localhost:8000/v1/models > /dev/null 2>&1; then
-    echo "⚠️  vLLM no está corriendo"
+echo "🔍 Verificando Ollama..."
+if ! command -v ollama &> /dev/null; then
+    echo "📦 Ollama no está instalado. Instalando..."
     echo ""
+    echo "   Instalando Ollama..."
+    curl -fsSL https://ollama.com/install.sh | sh
     
-    # Verificar si huggingface-cli está instalado y funcionando
-    HF_CLI_CMD=""
-    if command -v huggingface-cli &> /dev/null; then
-        HF_CLI_CMD="huggingface-cli"
-    elif python3 -m huggingface_hub.cli &> /dev/null 2>&1; then
-        HF_CLI_CMD="python3 -m huggingface_hub.cli"
-    else
-        echo "📦 Instalando huggingface_hub..."
-        python3 -m pip install --quiet --user huggingface_hub
-        # Verificar nuevamente después de instalar
-        if command -v huggingface-cli &> /dev/null; then
-            HF_CLI_CMD="huggingface-cli"
-        elif python3 -m huggingface_hub.cli &> /dev/null 2>&1; then
-            HF_CLI_CMD="python3 -m huggingface_hub.cli"
-        else
-            echo "⚠️  No se pudo instalar huggingface-cli correctamente"
-            echo "   Intentando método alternativo con token..."
-            HF_CLI_CMD=""
-        fi
+    if [ $? -ne 0 ]; then
+        echo "❌ Error instalando Ollama"
+        echo "   Instala manualmente desde: https://ollama.com"
+        exit 1
     fi
     
-    # Verificar si el usuario está logueado en Hugging Face
-    HF_TOKEN_FILE="$HOME/.huggingface/token"
-    if [ ! -f "$HF_TOKEN_FILE" ]; then
-        echo "🔐 No estás autenticado en Hugging Face"
-        echo "   Se necesitan credenciales para descargar los modelos"
-        echo ""
-        read -p "   Email de Hugging Face: " HF_EMAIL
-        read -sp "   Contraseña: " HF_PASSWORD
-        echo ""
-        echo ""
-        echo "🔑 Autenticando en Hugging Face..."
-        
-        # Intentar login con huggingface-cli si está disponible
-        if [ ! -z "$HF_CLI_CMD" ]; then
-            echo "$HF_PASSWORD" | $HF_CLI_CMD login --username "$HF_EMAIL" --password-stdin 2>&1
-            
-            if [ $? -ne 0 ]; then
-                echo "⚠️  Error en la autenticación con CLI. Usando método alternativo..."
-                HF_CLI_CMD=""
-            else
-                echo "✅ Autenticación exitosa"
-            fi
-        fi
-        
-        # Si el CLI falló o no está disponible, usar token directamente
-        if [ -z "$HF_CLI_CMD" ] || [ ! -f "$HF_TOKEN_FILE" ]; then
-            echo ""
-            echo "   Método alternativo: usar token de Hugging Face"
-            echo "   Puedes obtenerlo en: https://huggingface.co/settings/tokens"
-            read -sp "   Token de Hugging Face (o Enter para continuar sin token): " HF_TOKEN
-            echo ""
-            if [ ! -z "$HF_TOKEN" ]; then
-                mkdir -p "$HOME/.huggingface"
-                echo "$HF_TOKEN" > "$HF_TOKEN_FILE"
-                echo "✅ Token guardado"
-            else
-                echo "⚠️  Continuando sin token. Los modelos públicos deberían funcionar."
-            fi
-        fi
-    else
-        echo "✅ Ya estás autenticado en Hugging Face"
+    echo "✅ Ollama instalado"
+else
+    echo "✅ Ollama está instalado"
+fi
+
+# Verificar si el servicio Ollama está corriendo
+if ! curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
+    echo "🚀 Iniciando servicio Ollama..."
+    ollama serve > /tmp/ollama.log 2>&1 &
+    OLLAMA_PID=$!
+    sleep 3
+    
+    # Verificar que se inició correctamente
+    if ! curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
+        echo "⚠️  El servicio Ollama no se inició correctamente"
+        echo "   Intenta iniciarlo manualmente: ollama serve"
+        exit 1
     fi
-    
-    echo ""
-    echo "🚀 Iniciando vLLM con modelo: $LLAMA_MODEL"
-    echo "   Esto puede tomar varios minutos la primera vez (descargará el modelo)..."
-    echo ""
-    
-    # Iniciar vLLM en background
-    vllm serve "$LLAMA_MODEL" > /tmp/vllm.log 2>&1 &
-    VLLM_PID=$!
-    
-    echo "⏳ Esperando a que vLLM esté listo..."
-    echo "   (Revisa /tmp/vllm.log para ver el progreso de descarga)"
-    echo ""
-    
-    # Esperar hasta que vLLM responda (más tiempo para la primera descarga)
-    for i in {1..120}; do
-        sleep 5
-        if curl -s http://localhost:8000/v1/models > /dev/null 2>&1; then
-            echo "✅ vLLM está listo!"
-            break
-        fi
-        if [ $((i % 6)) -eq 0 ]; then
-            echo "   Esperando... ($i/120) - Esto puede tardar si es la primera descarga"
-        fi
-    done
-    
-    # Verificar si vLLM está corriendo después de la espera
-    if ! curl -s http://localhost:8000/v1/models > /dev/null 2>&1; then
-        echo ""
-        echo "⚠️  vLLM no respondió después de esperar"
-        echo "   Revisa los logs en /tmp/vllm.log para ver qué pasó"
-        echo "   Puede que el modelo esté descargándose aún..."
-        echo ""
-        echo "   ¿Quieres continuar de todas formas? (s/n)"
-        read -r continuar
-        if [ "$continuar" != "s" ]; then
-            kill $VLLM_PID 2>/dev/null
-            exit 1
-        fi
+    echo "✅ Servicio Ollama iniciado"
+else
+    echo "✅ Servicio Ollama ya está corriendo"
+fi
+
+# Verificar si los modelos están descargados
+echo ""
+echo "🔍 Verificando modelos..."
+MODELS=$(ollama list 2>/dev/null | grep -E "$LLAMA_MODEL|$DEEPSEEK_MODEL" || echo "")
+
+if ! echo "$MODELS" | grep -q "$LLAMA_MODEL"; then
+    echo "📥 Descargando modelo Llama: $LLAMA_MODEL"
+    echo "   Esto puede tomar varios minutos la primera vez..."
+    ollama pull "$LLAMA_MODEL"
+    if [ $? -ne 0 ]; then
+        echo "⚠️  Error descargando modelo Llama"
+        echo "   Intenta manualmente: ollama pull $LLAMA_MODEL"
+    else
+        echo "✅ Modelo Llama descargado"
     fi
 else
-    echo "✅ vLLM está corriendo"
+    echo "✅ Modelo Llama ya está disponible"
 fi
+
+if ! echo "$MODELS" | grep -q "$DEEPSEEK_MODEL"; then
+    echo "📥 Descargando modelo DeepSeek: $DEEPSEEK_MODEL"
+    echo "   Esto puede tomar varios minutos la primera vez..."
+    ollama pull "$DEEPSEEK_MODEL"
+    if [ $? -ne 0 ]; then
+        echo "⚠️  Error descargando modelo DeepSeek"
+        echo "   Intenta manualmente: ollama pull $DEEPSEEK_MODEL"
+    else
+        echo "✅ Modelo DeepSeek descargado"
+    fi
+else
+    echo "✅ Modelo DeepSeek ya está disponible"
+fi
+
 echo ""
 
 # Configurar backend
@@ -225,8 +184,9 @@ echo ""
 echo "✅ Aplicación iniciada!"
 echo "   Backend: http://localhost:5000"
 echo "   Frontend: http://localhost:3000"
+echo "   Ollama: http://localhost:11434"
 echo ""
-echo "Presiona Ctrl+C para detener ambos servicios"
+echo "Presiona Ctrl+C para detener todos los servicios"
 
 # Esperar a que el usuario presione Ctrl+C
 cleanup() {
@@ -236,11 +196,10 @@ cleanup() {
     if [ ! -z "$FRONTEND_PID" ]; then
         kill $FRONTEND_PID 2>/dev/null
     fi
-    if [ ! -z "$VLLM_PID" ]; then
-        kill $VLLM_PID 2>/dev/null
+    if [ ! -z "$OLLAMA_PID" ]; then
+        kill $OLLAMA_PID 2>/dev/null
     fi
     exit
 }
 trap cleanup INT TERM
 wait
-
