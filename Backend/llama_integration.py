@@ -96,7 +96,8 @@ class LLMClient:
                     'needs_code': needs_code,
                     'code': code_info.get('code') if needs_code else None,
                     'language': code_info.get('language') if needs_code else None,
-                    'needs_deepseek': code_info.get('needs_deepseek', False)
+                    'needs_deepseek': code_info.get('needs_deepseek', False),
+                    'is_system_command': code_info.get('is_system_command', False)
                 }
             else:
                 logger.error(f"Error en llamada a Ollama: {response.status_code} - {response.text}")
@@ -204,32 +205,60 @@ Genera SOLO el código, sin explicaciones adicionales a menos que sea necesario 
     
     def _build_system_prompt(self, username):
         """Construye el prompt del sistema sin sesgo, directo y conciso"""
-        return f"""Eres un asistente técnico directo y eficiente para {username}.
+        return f"""Eres asistente técnico para {username}. Máximo 2 frases. Ve directo al grano.
 
-REGLAS:
-- Responde de forma concisa y directa. Sin explicaciones largas.
-- Si pides algo, di QUÉ harás y CÓMO, sin rodeos.
-- Sé conversacional pero técnico. No te explayes.
-- Código: muéstralo y pregunta si ejecutar. Sin explicaciones extensas.
-- Usa herramientas de Kali Linux cuando sea necesario.
-- Genera scripts en Python, C, Rust, Go según necesidad.
-- Para código complejo, usa DeepSeek.
+REGLAS ABSOLUTAS:
+- 1 frase máximo antes de ejecutar. Sin explicaciones.
+- Comandos del sistema (nmap, ping, etc.): escríbelos directamente en tu respuesta, se ejecutarán automáticamente.
+- NO expliques. NO des pasos. NO digas "necesitarás" o "deberás". Solo ejecuta.
+- Código Python: solo si realmente necesitas crear un script. Muestra código, pregunta ejecutar.
 
-FORMATO:
-- Pregunta directa → Respuesta directa con acción.
-- Si necesitas aclarar algo, pregunta brevemente.
-- Máximo 2-3 frases de contexto antes de la acción.
+EJEMPLOS:
+Usuario: "escanea 10.129.23.16"
+Tú: "nmap -sS -sV -p- 10.129.23.16"
 
-Ejemplo:
-Usuario: "escanea esta IP"
-Tú: "Escaneando 10.129.23.10 con nmap -sS -sV -p- ... [resultado]"
+Usuario: "ping a google"
+Tú: "ping -c 4 8.8.8.8"
 
-Sé directo, técnico y eficiente."""
+Usuario: "crea script para escanear puertos"
+Tú: "```python\nimport nmap\n...\n``` ¿Ejecutar?"
+
+PROHIBIDO ABSOLUTAMENTE:
+- Más de 1 frase antes de la acción
+- Explicar cómo funcionan las herramientas
+- Pasos de instalación o configuración
+- Frases como "para hacer X necesitas Y" o "deberás instalar Z"
+- Contexto innecesario
+
+Responde como un terminal: comando → resultado. Nada más."""
     
     def _analyze_response(self, response_text):
         """
-        Analiza la respuesta para detectar código o necesidad de DeepSeek
+        Analiza la respuesta para detectar código, comandos del sistema o necesidad de DeepSeek
         """
+        # Detectar comandos del sistema directamente en el texto (nmap, ping, etc.)
+        system_commands = ['nmap', 'ping', 'curl', 'wget', 'netstat', 'ss', 'tcpdump', 
+                          'grep', 'find', 'ls', 'cat', 'tail', 'head', 'ps', 'top',
+                          'iptables', 'ufw', 'systemctl', 'service', 'journalctl', 'whois',
+                          'dig', 'nslookup', 'arp', 'route', 'ifconfig', 'ip']
+        
+        # Buscar comandos del sistema en el texto (formato: comando + argumentos)
+        for cmd in system_commands:
+            pattern = r'\b' + re.escape(cmd) + r'\s+[^\n`]+'
+            match = re.search(pattern, response_text, re.IGNORECASE)
+            if match:
+                command_line = match.group(0).strip()
+                # Limpiar el comando (quitar puntuación al final si es solo explicación)
+                command_line = re.sub(r'[.,;:!?]+$', '', command_line).strip()
+                # Verificar que no sea solo una mención en texto explicativo
+                if len(command_line.split()) > 1:  # Tiene argumentos, es un comando real
+                    return True, {
+                        'code': command_line,
+                        'language': 'bash',
+                        'is_system_command': True,
+                        'needs_deepseek': False
+                    }
+        
         # Detectar bloques de código
         code_blocks = []
         languages = ['python', 'bash', 'c', 'rust', 'go', 'javascript']
@@ -256,10 +285,11 @@ Sé directo, técnico y eficiente."""
             return True, {
                 'code': code_blocks[0]['code'],
                 'language': code_blocks[0]['language'],
-                'needs_deepseek': needs_deepseek
+                'needs_deepseek': needs_deepseek,
+                'is_system_command': False
             }
         
-        return False, {'needs_deepseek': needs_deepseek}
+        return False, {'needs_deepseek': needs_deepseek, 'is_system_command': False}
 
 # Mantener compatibilidad con nombre anterior
 Llama3BClient = LLMClient

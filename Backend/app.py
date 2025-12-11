@@ -278,7 +278,7 @@ def execute_script():
         return jsonify({'error': f'Error ejecutando script: {str(e)}'}), 500
 
 def process_with_llama(message, username, conversation_id):
-    """Procesa el mensaje con Llama usando vLLM"""
+    """Procesa el mensaje con Llama usando Ollama"""
     # Obtener historial de la conversación
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -290,15 +290,30 @@ def process_with_llama(message, username, conversation_id):
     history = cursor.fetchall()
     conn.close()
     
-    # Procesar con Llama usando vLLM
+    # Procesar con Llama usando Ollama
     response = llm_client.generate(message, None, history, username, use_deepseek=False)
     
+    # Si detecta comandos del sistema, ejecutarlos directamente
+    if response.get('needs_code') and response.get('is_system_command'):
+        logger.info(f"Ejecutando comando del sistema: {response.get('code')}")
+        try:
+            command_result = run_system_command(response.get('code'))
+            if command_result.get('success'):
+                response['content'] += f"\n\n✅ Resultado:\n{command_result.get('output', '')}"
+            else:
+                response['content'] += f"\n\n❌ Error: {command_result.get('error', 'Error desconocido')}"
+            # No necesita código para ejecutar, ya se ejecutó
+            response['needs_code'] = False
+        except Exception as e:
+            logger.error(f"Error ejecutando comando: {str(e)}")
+            response['content'] += f"\n\n❌ Error ejecutando comando: {str(e)}"
+            response['needs_code'] = False
+    
     # Si necesita DeepSeek para generar código
-    if response.get('needs_deepseek'):
+    elif response.get('needs_deepseek'):
         logger.info("Solicitando código a DeepSeek")
         
         # Construir contexto mejorado para DeepSeek basado en la respuesta de Llama
-        # Llama razona y prepara instrucciones específicas para DeepSeek
         context_for_deepseek = f"""
 Mensaje del usuario: {message}
 Respuesta de análisis: {response.get('content', '')}
@@ -318,7 +333,7 @@ Historial de conversación relevante: {str(history[-3:]) if history else 'Ningun
         if deepseek_result.get('success'):
             code = deepseek_result.get('code')
             language = deepseek_result.get('language', language)
-            response['content'] += f"\n\nHe generado el siguiente código usando DeepSeek:\n\n```{language}\n{code}\n```"
+            response['content'] += f"\n\n```{language}\n{code}\n```"
             response['code'] = code
             response['language'] = language
             response['needs_code'] = True
@@ -326,6 +341,32 @@ Historial de conversación relevante: {str(history[-3:]) if history else 'Ningun
             response['content'] += f"\n\n⚠️ No pude generar el código con DeepSeek: {deepseek_result.get('error', 'Error desconocido')}"
     
     return response
+
+def run_system_command(command):
+    """Ejecuta un comando del sistema directamente"""
+    try:
+        result = subprocess.run(
+            command,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=60
+        )
+        return {
+            'success': result.returncode == 0,
+            'output': result.stdout,
+            'error': result.stderr if result.returncode != 0 else None
+        }
+    except subprocess.TimeoutExpired:
+        return {
+            'success': False,
+            'error': 'Comando excedió el tiempo límite (60 segundos)'
+        }
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e)
+        }
 
 def run_script(script_content, language):
     """Ejecuta un script en el lenguaje especificado"""
