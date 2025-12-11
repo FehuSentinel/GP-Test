@@ -14,10 +14,25 @@ if ! curl -s http://localhost:8000/v1/models > /dev/null 2>&1; then
     echo "⚠️  vLLM no está corriendo"
     echo ""
     
-    # Verificar si huggingface-cli está instalado
-    if ! command -v huggingface-cli &> /dev/null; then
+    # Verificar si huggingface-cli está instalado y funcionando
+    HF_CLI_CMD=""
+    if command -v huggingface-cli &> /dev/null; then
+        HF_CLI_CMD="huggingface-cli"
+    elif python3 -m huggingface_hub.cli &> /dev/null 2>&1; then
+        HF_CLI_CMD="python3 -m huggingface_hub.cli"
+    else
         echo "📦 Instalando huggingface_hub..."
-        pip install --quiet huggingface_hub
+        python3 -m pip install --quiet --user huggingface_hub
+        # Verificar nuevamente después de instalar
+        if command -v huggingface-cli &> /dev/null; then
+            HF_CLI_CMD="huggingface-cli"
+        elif python3 -m huggingface_hub.cli &> /dev/null 2>&1; then
+            HF_CLI_CMD="python3 -m huggingface_hub.cli"
+        else
+            echo "⚠️  No se pudo instalar huggingface-cli correctamente"
+            echo "   Intentando método alternativo con token..."
+            HF_CLI_CMD=""
+        fi
     fi
     
     # Verificar si el usuario está logueado en Hugging Face
@@ -32,22 +47,32 @@ if ! curl -s http://localhost:8000/v1/models > /dev/null 2>&1; then
         echo ""
         echo "🔑 Autenticando en Hugging Face..."
         
-        # Intentar login con huggingface-cli
-        echo "$HF_PASSWORD" | huggingface-cli login --username "$HF_EMAIL" --password-stdin 2>&1
+        # Intentar login con huggingface-cli si está disponible
+        if [ ! -z "$HF_CLI_CMD" ]; then
+            echo "$HF_PASSWORD" | $HF_CLI_CMD login --username "$HF_EMAIL" --password-stdin 2>&1
+            
+            if [ $? -ne 0 ]; then
+                echo "⚠️  Error en la autenticación con CLI. Usando método alternativo..."
+                HF_CLI_CMD=""
+            else
+                echo "✅ Autenticación exitosa"
+            fi
+        fi
         
-        if [ $? -ne 0 ]; then
-            echo "⚠️  Error en la autenticación. Intentando método alternativo..."
-            # Método alternativo: usar token directamente si tienen uno
-            echo "   Si tienes un token de Hugging Face, puedes usarlo:"
+        # Si el CLI falló o no está disponible, usar token directamente
+        if [ -z "$HF_CLI_CMD" ] || [ ! -f "$HF_TOKEN_FILE" ]; then
+            echo ""
+            echo "   Método alternativo: usar token de Hugging Face"
+            echo "   Puedes obtenerlo en: https://huggingface.co/settings/tokens"
             read -sp "   Token de Hugging Face (o Enter para continuar sin token): " HF_TOKEN
             echo ""
             if [ ! -z "$HF_TOKEN" ]; then
-                echo "$HF_TOKEN" > "$HF_TOKEN_FILE"
                 mkdir -p "$HOME/.huggingface"
+                echo "$HF_TOKEN" > "$HF_TOKEN_FILE"
                 echo "✅ Token guardado"
+            else
+                echo "⚠️  Continuando sin token. Los modelos públicos deberían funcionar."
             fi
-        else
-            echo "✅ Autenticación exitosa"
         fi
     else
         echo "✅ Ya estás autenticado en Hugging Face"
