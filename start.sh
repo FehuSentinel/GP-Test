@@ -7,18 +7,28 @@ echo ""
 
 # Verificar e instalar Ollama
 OLLAMA_PID=""
-# Modelos SIN restricciones de seguridad (más permisivos)
-# Opciones recomendadas (de menos a más restrictivo):
-# 1. mistral:7b - Muy permisivo, buen rendimiento (~4GB RAM) - RECOMENDADO
-# 2. qwen2:7b - Modelo chino, muy permisivo (~4GB RAM)
-# 3. llama2:7b - Llama 2 sin restricciones de Llama 3 (~4GB RAM)
-# 4. codellama:7b - Enfocado en código, menos restrictivo (~4GB RAM)
-# 5. phi3:mini - Pequeño pero permisivo (~2GB RAM)
-LLAMA_MODEL="mistral:7b"  # Mistral - muy permisivo y sin restricciones
-DEEPSEEK_MODEL="codellama:7b"  # CodeLlama - menos restrictivo que DeepSeek
-# Alternativas más ligeras si tienes pocos recursos:
-# LLAMA_MODEL="phi3:mini"  # ~2GB RAM, permisivo
-# DEEPSEEK_MODEL="codellama:7b-code"  # ~4GB RAM
+# Modelos SIN restricciones de seguridad (optimizado para 25GB RAM)
+# 
+# MODELOS 7B (~4GB RAM cada uno) - Balance perfecto:
+# 1. mistral:7b - Muy permisivo, excelente rendimiento - RECOMENDADO
+# 2. qwen2:7b - Modelo chino, muy permisivo
+# 3. llama2:7b - Llama 2 sin restricciones de Llama 3
+# 4. codellama:7b - Enfocado en código, menos restrictivo
+#
+# MODELOS 13B (~16-20GB RAM cada uno) - Máximo rendimiento con 25GB:
+# 5. mistral-nemo:12b - Versión más grande de Mistral (~12GB RAM)
+# 6. qwen2:14b - Modelo chino más grande (~14GB RAM)
+# 7. llama2:13b - Llama 2 más grande (~16GB RAM)
+# 8. codellama:13b - CodeLlama más grande (~16GB RAM)
+#
+# Con 25GB RAM puedes usar modelos 7B sin problemas (recomendado)
+# O modelos 13B si quieres máximo rendimiento (cambia las variables abajo)
+LLAMA_MODEL="mistral:7b"  # Mistral 7B - muy permisivo y sin restricciones
+DEEPSEEK_MODEL="codellama:7b"  # CodeLlama 7B - menos restrictivo que DeepSeek
+# 
+# Si quieres MÁXIMO rendimiento con 25GB RAM, descomenta estas líneas:
+# LLAMA_MODEL="mistral-nemo:12b"  # ~12GB RAM, más potente
+# DEEPSEEK_MODEL="codellama:13b"  # ~16GB RAM, más potente para código
 
 echo "🔍 Verificando Ollama..."
 if ! command -v ollama &> /dev/null; then
