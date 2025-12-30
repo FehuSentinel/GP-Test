@@ -1,4 +1,4 @@
-# GP-Test - Chat IA Local Sin Sesgo
+# GP-Test - Chat IA Local
 
 Aplicación de chat IA local con modelos sin restricciones usando Ollama, diseñada para uso técnico y de seguridad sin sesgos. Interfaz estilo ciberseguridad con tema oscuro.
 
