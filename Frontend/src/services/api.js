@@ -10,6 +10,25 @@ const api = axios.create({
   timeout: 30000, // 30 segundos de timeout
 });
 
+// Función para obtener el token del localStorage
+const getToken = () => {
+  return localStorage.getItem('auth_token');
+};
+
+// Interceptor para agregar el token a todas las peticiones
+api.interceptors.request.use(
+  (config) => {
+    const token = getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // Interceptor para manejar errores
 api.interceptors.response.use(
   (response) => response,
@@ -18,18 +37,69 @@ api.interceptors.response.use(
       console.error('Error de conexión: El backend no está disponible');
       return Promise.reject(new Error('No se puede conectar con el servidor. Asegúrate de que el backend esté corriendo en http://localhost:5000'));
     }
+    if (error.response && error.response.status === 401) {
+      // Token inválido o expirado
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user');
+      window.location.reload();
+    }
     return Promise.reject(error);
   }
 );
 
-// Configuración
-export const checkUsername = async () => {
-  const response = await api.get('/config/user');
+// Autenticación
+export const register = async (username, email, password) => {
+  const response = await api.post('/auth/register', {
+    username,
+    email,
+    password,
+  });
+  if (response.data.token) {
+    localStorage.setItem('auth_token', response.data.token);
+    localStorage.setItem('user', JSON.stringify(response.data.user));
+  }
   return response.data;
 };
 
-export const setUsername = async (username) => {
-  const response = await api.post('/config/user', { username });
+export const login = async (email, password) => {
+  const response = await api.post('/auth/login', {
+    email,
+    password,
+  });
+  if (response.data.token) {
+    localStorage.setItem('auth_token', response.data.token);
+    localStorage.setItem('user', JSON.stringify(response.data.user));
+  }
+  return response.data;
+};
+
+export const logout = () => {
+  localStorage.removeItem('auth_token');
+  localStorage.removeItem('user');
+};
+
+export const getCurrentUser = async () => {
+  const response = await api.get('/auth/me');
+  return response.data;
+};
+
+export const isAuthenticated = () => {
+  return !!getToken();
+};
+
+export const getStoredUser = () => {
+  const userStr = localStorage.getItem('user');
+  return userStr ? JSON.parse(userStr) : null;
+};
+
+export const setLanguage = async (language) => {
+  const response = await api.post('/auth/language', { language });
+  // Actualizar usuario en localStorage
+  const user = getStoredUser();
+  if (user) {
+    user.language = language;
+    localStorage.setItem('user', JSON.stringify(user));
+  }
   return response.data;
 };
 

@@ -17,9 +17,12 @@ Aplicación de chat IA local con modelos sin restricciones usando Ollama, diseñ
 ## 📋 Requisitos
 
 ### Sistema
-- **RAM**: Mínimo 8GB (recomendado 16GB+, optimizado para 25GB)
+- **RAM**: 
+  - **Mínima absoluta**: 20GB (con modelos 13B por defecto)
+  - **Recomendada**: 32GB+ para uso cómodo con mejores modelos
+  - **Ideal**: 32GB+ para máximo rendimiento
 - **OS**: Linux (Kali Linux recomendado) o sistemas similares
-- **Espacio**: ~10GB libres para modelos
+- **Espacio**: ~30GB libres para modelos (Mixtral 8x7B + CodeLlama 13B)
 
 ### Backend
 - Python 3.8+
@@ -57,7 +60,7 @@ chmod +x start.sh
 
 El script `start.sh` hace todo automáticamente:
 - ✅ Verifica e instala Ollama si no está presente
-- ✅ Descarga los modelos necesarios (Mistral 7B y CodeLlama 7B)
+- ✅ Descarga los modelos necesarios (Mixtral 8x7B y CodeLlama 13B - MEJORES modelos)
 - ✅ Crea y activa el entorno virtual de Python
 - ✅ Instala dependencias del backend
 - ✅ Instala dependencias del frontend
@@ -65,46 +68,64 @@ El script `start.sh` hace todo automáticamente:
 
 ## ⚙️ Configuración de Modelos
 
-### Modelos por Defecto (Optimizados para 25GB RAM)
+### 🎯 Modelos por Defecto - MEJORES Modelos Sin Restricciones
 
-**Configuración recomendada:**
-- **Modelo Principal**: `mistral:7b` (~4GB RAM)
-- **Modelo Código**: `codellama:7b` (~4GB RAM)
-- **RAM total**: ~5-6GB
-- **RAM libre**: ~19GB disponibles
+**Este proyecto está diseñado para usar los MEJORES modelos disponibles sin restricciones, optimizados para MÁXIMO RENDIMIENTO.**
 
-### Modelos Disponibles
+**Configuración actual (MEJORES modelos):**
+- **Modelo Principal**: `mixtral:8x7b` ⭐ (~12GB RAM)
+  - 8 expertos, mejor modelo general disponible
+  - Máximo rendimiento y capacidad de razonamiento
+- **Modelo Código**: `codellama:13b` ⭐ (~16GB RAM)
+  - Mejor modelo para generación de código
+  - Excelente para Python, C, Rust, Go, Bash
 
-#### Modelos 7B (~4GB RAM cada uno) - Balance Perfecto ⭐
+**RAM Total Necesaria:**
+- **Máximo simultáneo**: ~16GB (se cargan uno a la vez)
+- **RAM mínima recomendada**: 32GB para uso cómodo
+- **RAM mínima absoluta**: 20GB (con modelos 13B)
 
-| Modelo | Sin Restricciones | Rendimiento | Velocidad |
-|--------|-------------------|-------------|-----------|
-| **mistral:7b** | ✅ 100% | ⭐⭐⭐⭐⭐ | ⚡⚡⚡⚡⚡ |
-| **qwen2:7b** | ✅ 100% | ⭐⭐⭐⭐⭐ | ⚡⚡⚡⚡⚡ |
-| **llama2:7b** | ✅ 100% | ⭐⭐⭐⭐ | ⚡⚡⚡⚡ |
-| **codellama:7b** | ✅ 100% | ⭐⭐⭐⭐⭐ | ⚡⚡⚡⚡⚡ |
+### 📊 Consumo Detallado de RAM por Modelo
 
-#### Modelos 13B+ (~16-20GB RAM cada uno) - Máximo Rendimiento
+#### ⭐ Modelos MEJORES (Configuración por Defecto)
 
-| Modelo | Sin Restricciones | Rendimiento | Velocidad |
-|--------|-------------------|-------------|-----------|
-| **mistral-nemo:12b** | ✅ 100% | ⭐⭐⭐⭐⭐ | ⚡⚡⚡⚡ |
-| **qwen2:14b** | ✅ 100% | ⭐⭐⭐⭐⭐ | ⚡⚡⚡⚡ |
-| **llama2:13b** | ✅ 100% | ⭐⭐⭐⭐⭐ | ⚡⚡⚡ |
-| **codellama:13b** | ✅ 100% | ⭐⭐⭐⭐⭐ | ⚡⚡⚡ |
+| Modelo | RAM | Sin Restricciones | Rendimiento | Velocidad | Uso |
+|--------|-----|-------------------|-------------|-----------|-----|
+| **mixtral:8x7b** ⭐ | ~12GB | ✅ 100% | ⭐⭐⭐⭐⭐ | ⚡⚡⚡⚡ | General |
+| **codellama:13b** ⭐ | ~16GB | ✅ 100% | ⭐⭐⭐⭐⭐ | ⚡⚡⚡ | Código |
 
-### Cambiar Modelos
+#### Modelos 7B (~4GB RAM cada uno) - Alternativa Ligera
+
+| Modelo | RAM | Sin Restricciones | Rendimiento | Velocidad |
+|--------|-----|-------------------|-------------|-----------|
+| **mistral:7b** | ~4GB | ✅ 100% | ⭐⭐⭐⭐⭐ | ⚡⚡⚡⚡⚡ |
+| **qwen2:7b** | ~4GB | ✅ 100% | ⭐⭐⭐⭐⭐ | ⚡⚡⚡⚡⚡ |
+| **llama2:7b** | ~4GB | ✅ 100% | ⭐⭐⭐⭐ | ⚡⚡⚡⚡ |
+| **codellama:7b** | ~4GB | ✅ 100% | ⭐⭐⭐⭐⭐ | ⚡⚡⚡⚡⚡ |
+
+#### Modelos 13B+ (~12-20GB RAM cada uno) - Máximo Rendimiento
+
+| Modelo | RAM | Sin Restricciones | Rendimiento | Velocidad |
+|--------|-----|-------------------|-------------|-----------|
+| **qwen2:14b** | ~14GB | ✅ 100% | ⭐⭐⭐⭐⭐ | ⚡⚡⚡⚡ |
+| **llama2:13b** | ~16GB | ✅ 100% | ⭐⭐⭐⭐⭐ | ⚡⚡⚡ |
+| **mistral-nemo:12b** | ~12GB | ✅ 100% | ⭐⭐⭐⭐⭐ | ⚡⚡⚡⚡ |
+
+### 🔄 Cambiar Modelos
+
+**Si tienes menos RAM, usa modelos 7B:**
 
 **Opción 1: Editar `Backend/config.py`**
 ```python
-LLAMA_MODEL = 'mistral:7b'  # Cambia aquí
-DEEPSEEK_MODEL = 'codellama:7b'  # Cambia aquí
+# Modelos 7B (balance perfecto, ~8GB RAM total)
+LLAMA_MODEL = 'mistral:7b'  # ~4GB RAM
+DEEPSEEK_MODEL = 'codellama:7b'  # ~4GB RAM
 ```
 
 **Opción 2: Variables de entorno**
 ```bash
-export LLAMA_MODEL="mistral-nemo:12b"
-export DEEPSEEK_MODEL="codellama:13b"
+export LLAMA_MODEL="mistral:7b"
+export DEEPSEEK_MODEL="codellama:7b"
 ./start.sh
 ```
 
@@ -114,16 +135,20 @@ LLAMA_MODEL="mistral:7b"
 DEEPSEEK_MODEL="codellama:7b"
 ```
 
-### Descargar Modelos Manualmente
+### 📥 Descargar Modelos Manualmente
 
 ```bash
-# Modelos 7B (recomendado)
-ollama pull mistral:7b
-ollama pull codellama:7b
+# ⭐ MEJORES MODELOS (configuración por defecto)
+ollama pull mixtral:8x7b      # ~12GB RAM - MEJOR modelo general
+ollama pull codellama:13b     # ~16GB RAM - MEJOR modelo para código
 
-# Modelos 13B (máximo rendimiento)
-ollama pull mistral-nemo:12b
-ollama pull codellama:13b
+# Alternativa: Modelos 7B (si tienes menos RAM)
+ollama pull mistral:7b        # ~4GB RAM
+ollama pull codellama:7b      # ~4GB RAM
+
+# Otros modelos disponibles
+ollama pull qwen2:14b         # ~14GB RAM
+ollama pull llama2:13b        # ~16GB RAM
 
 # Ver modelos descargados
 ollama list
@@ -295,32 +320,62 @@ nvm install 18
 - Asegúrate de tener permisos sudo configurados
 - Los comandos se ejecutan en un entorno controlado
 
-## 📊 Requisitos de RAM
+## 📊 Requisitos de RAM - Diseño del Proyecto
 
-### Configuración Recomendada (25GB RAM)
+### 🎯 Diseño del Proyecto
 
-**Modelos 7B:**
-- RAM necesaria: ~5-6GB
-- RAM libre: ~19GB
+**Este proyecto está diseñado para usar los MEJORES modelos sin restricciones disponibles, optimizados para MÁXIMO RENDIMIENTO.**
+
+### ⭐ Configuración por Defecto (MEJORES Modelos)
+
+**Modelos configurados:**
+- **Mixtral 8x7B**: ~12GB RAM (8 expertos, mejor modelo general)
+- **CodeLlama 13B**: ~16GB RAM (mejor modelo para código)
+
+**Consumo de RAM:**
+- **Máximo simultáneo**: ~16GB (se cargan uno a la vez)
+- **RAM mínima recomendada**: **32GB** para uso cómodo
+- **RAM mínima absoluta**: **20GB** (con modelos 13B)
+- **RAM ideal**: **32GB+** para mejor rendimiento
+
+### 📋 Configuraciones Alternativas
+
+#### Opción 1: Modelos 7B (Balance Perfecto)
+- **Mistral 7B**: ~4GB RAM
+- **CodeLlama 7B**: ~4GB RAM
+- **RAM total**: ~8GB
+- **RAM mínima**: 16GB recomendada
 - ✅ Mejor balance rendimiento/recursos
 
-**Modelos 13B:**
-- RAM necesaria: ~16-20GB (se cargan uno a la vez)
-- RAM libre: ~5-9GB
+#### Opción 2: Modelos 13B Individuales
+- **Llama 2 13B**: ~16GB RAM
+- **CodeLlama 13B**: ~16GB RAM
+- **RAM total**: ~16GB (se cargan uno a la vez)
+- **RAM mínima**: 20GB recomendada
 - ✅ Máximo rendimiento
 
-### Configuración Mínima (8GB RAM)
+#### Opción 3: Modelos Pequeños (Mínimo)
+- **phi3:mini**: ~2GB RAM
+- **llama3.2:1b**: ~1GB RAM
+- **RAM total**: ~3GB
+- **RAM mínima**: 8GB
+- ⚠️ Menor rendimiento, solo para sistemas limitados
 
-**Modelos pequeños:**
-- `phi3:mini` (~2GB RAM)
-- `llama3.2:1b` (~1GB RAM)
+### 📈 Tabla Resumen de Consumo
+
+| Configuración | Modelo General | Modelo Código | RAM Total | RAM Mínima |
+|---------------|----------------|---------------|-----------|------------|
+| **⭐ Por Defecto** | Mixtral 8x7B (12GB) | CodeLlama 13B (16GB) | ~16GB max | 32GB |
+| **Balance** | Mistral 7B (4GB) | CodeLlama 7B (4GB) | ~8GB | 16GB |
+| **Máximo** | Llama 2 13B (16GB) | CodeLlama 13B (16GB) | ~16GB max | 20GB |
+| **Mínimo** | phi3:mini (2GB) | llama3.2:1b (1GB) | ~3GB | 8GB |
 
 ## 🎯 Flujo de Trabajo
 
 1. **Usuario envía mensaje** → Frontend React
 2. **Frontend** → Backend Flask API (`/api/chat`)
-3. **Backend** → Ollama (Mistral 7B)
-4. **Si necesita código complejo** → Ollama (CodeLlama 7B)
+3. **Backend** → Ollama (Mixtral 8x7B - mejor modelo general)
+4. **Si necesita código complejo** → Ollama (CodeLlama 13B - mejor modelo código)
 5. **Si detecta comando del sistema** → Ejecuta directamente con `sudo`
 6. **Respuesta** → Usuario (concisa y directa)
 7. **Si hay código** → Modal de ejecución (opcional)
@@ -343,13 +398,15 @@ nvm install 18
 - ✅ Mejor manejo de errores
 - ✅ Soporte para múltiples modelos simultáneos
 
-## 📝 Notas
+## 📝 Notas Importantes
 
-- Los modelos se cargan bajo demanda (uno a la vez por defecto)
-- Con 25GB RAM puedes tener ambos modelos cargados simultáneamente
-- Mistral 7B es la mejor opción balance para la mayoría de casos
-- CodeLlama 7B es excelente para código sin restricciones
-- La UI está optimizada para temas oscuros y reduce el brillo
+- **Modelos por defecto**: Se usan los MEJORES modelos disponibles (Mixtral 8x7B y CodeLlama 13B)
+- **Consumo de RAM**: ~16GB máximo simultáneo (se cargan uno a la vez)
+- **RAM recomendada**: 32GB+ para uso cómodo con los mejores modelos
+- **Si tienes menos RAM**: Cambia a modelos 7B en `Backend/config.py` o `start.sh`
+- **Los modelos se cargan bajo demanda**: Uno a la vez por defecto
+- **Con 32GB+ RAM**: Puedes tener ambos modelos cargados simultáneamente para mejor rendimiento
+- **La UI está optimizada**: Tema oscuro estilo ciberseguridad con brillo reducido
 
 ## 📄 Licencia
 
@@ -357,4 +414,4 @@ Este proyecto es de código abierto y está disponible para uso personal y educa
 
 ---
 
-**GP-Test** - Chat IA Local Sin Sesgo | Optimizado para 25GB RAM | Modelos Sin Restricciones
+**GP-Test** 

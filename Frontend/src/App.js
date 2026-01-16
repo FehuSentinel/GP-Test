@@ -2,32 +2,43 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
-import OnboardingModal from './components/OnboardingModal';
-import { checkUsername, setUsername } from './services/api';
+import LoginModal from './components/LoginModal';
+import RegisterModal from './components/RegisterModal';
+import LanguageSelector from './components/LanguageSelector';
+import { login, register, isAuthenticated, getStoredUser, logout, getCurrentUser, setLanguage } from './services/api';
 
 function App() {
-  const [username, setUsernameState] = useState(null);
+  const [user, setUser] = useState(null);
   const [currentConversation, setCurrentConversation] = useState(null);
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
+  const [showLanguageSelector, setShowLanguageSelector] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Verificar si hay nombre de usuario configurado
-    checkUsername()
-      .then(data => {
-        if (data.username) {
-          setUsernameState(data.username);
-        } else {
-          setShowOnboarding(true);
+    // Verificar si hay usuario autenticado
+    const checkAuth = async () => {
+      if (isAuthenticated()) {
+        try {
+          // Verificar que el token sigue siendo válido
+          const userData = await getCurrentUser();
+          setUser(userData);
+          // Si no tiene idioma configurado, mostrar selector
+          if (!userData.language || userData.needs_language) {
+            setShowLanguageSelector(true);
+          }
+        } catch (error) {
+          // Token inválido, limpiar y mostrar login
+          logout();
+          setShowLogin(true);
         }
-      })
-      .catch(error => {
-        console.error('Error verificando usuario:', error);
-        // Si hay error de conexión, mostrar onboarding de todas formas
-        if (error.message && error.message.includes('conectar')) {
-          console.warn('Backend no disponible, mostrando onboarding');
-        }
-        setShowOnboarding(true);
-      });
+      } else {
+        setShowLogin(true);
+      }
+      setLoading(false);
+    };
+
+    checkAuth();
 
     // Escuchar eventos de creación de conversación
     const handleConversationCreated = (event) => {
@@ -41,32 +52,88 @@ function App() {
     };
   }, []);
 
-  const handleUsernameSubmit = async (name) => {
-    try {
-      await setUsername(name);
-      setUsernameState(name);
-      setShowOnboarding(false);
-    } catch (error) {
-      console.error('Error estableciendo usuario:', error);
+  const handleLogin = async (email, password) => {
+    const response = await login(email, password);
+    setUser(response.user);
+    setShowLogin(false);
+    setShowRegister(false);
+    // Si necesita seleccionar idioma, mostrar selector
+    if (response.needs_language || !response.user.language) {
+      setShowLanguageSelector(true);
     }
   };
 
+  const handleRegister = async (username, email, password) => {
+    const response = await register(username, email, password);
+    setUser(response.user);
+    setShowLogin(false);
+    setShowRegister(false);
+    // Después del registro, siempre mostrar selector de idioma
+    setShowLanguageSelector(true);
+  };
+
+  const handleLanguageSelect = async (language) => {
+    await setLanguage(language);
+    // Actualizar usuario con el idioma seleccionado
+    const updatedUser = { ...user, language };
+    setUser(updatedUser);
+    setShowLanguageSelector(false);
+  };
+
+  const handleLogout = () => {
+    logout();
+    setUser(null);
+    setCurrentConversation(null);
+    setShowLogin(true);
+  };
+
+  if (loading) {
+    return (
+      <div className="app">
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'var(--text-primary)' }}>
+          Cargando...
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app">
-      {showOnboarding ? (
-        <OnboardingModal onSubmit={handleUsernameSubmit} />
-      ) : (
+      {showLanguageSelector && user ? (
+        <LanguageSelector 
+          onSelectLanguage={handleLanguageSelect}
+          username={user.username}
+        />
+      ) : showLogin && !user ? (
+        <LoginModal 
+          onLogin={handleLogin}
+          onSwitchToRegister={() => {
+            setShowLogin(false);
+            setShowRegister(true);
+          }}
+        />
+      ) : showRegister && !user ? (
+        <RegisterModal 
+          onRegister={handleRegister}
+          onSwitchToLogin={() => {
+            setShowRegister(false);
+            setShowLogin(true);
+          }}
+        />
+      ) : user && !showLanguageSelector ? (
         <>
           <Sidebar 
             currentConversation={currentConversation}
             onSelectConversation={setCurrentConversation}
+            user={user}
+            onLogout={handleLogout}
           />
           <ChatArea 
             conversationId={currentConversation}
-            username={username}
+            username={user.username}
           />
         </>
-      )}
+      ) : null}
     </div>
   );
 }

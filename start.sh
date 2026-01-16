@@ -7,28 +7,42 @@ echo ""
 
 # Verificar e instalar Ollama
 OLLAMA_PID=""
-# Modelos SIN restricciones de seguridad (optimizado para 25GB RAM)
+
+# ============================================================================
+# CONFIGURACIÓN DE MODELOS - MEJORES MODELOS SIN RESTRICCIONES
+# ============================================================================
 # 
-# MODELOS 7B (~4GB RAM cada uno) - Balance perfecto:
-# 1. mistral:7b - Muy permisivo, excelente rendimiento - RECOMENDADO
-# 2. qwen2:7b - Modelo chino, muy permisivo
-# 3. llama2:7b - Llama 2 sin restricciones de Llama 3
-# 4. codellama:7b - Enfocado en código, menos restrictivo
+# Este proyecto usa los MEJORES modelos disponibles sin restricciones.
+# Configurados para MÁXIMO RENDIMIENTO, independiente de RAM.
 #
-# MODELOS 13B (~16-20GB RAM cada uno) - Máximo rendimiento con 25GB:
-# 5. mistral-nemo:12b - Versión más grande de Mistral (~12GB RAM)
-# 6. qwen2:14b - Modelo chino más grande (~14GB RAM)
-# 7. llama2:13b - Llama 2 más grande (~16GB RAM)
-# 8. codellama:13b - CodeLlama más grande (~16GB RAM)
+# CONSUMO DE RAM:
+#   - Mixtral 8x7B: ~12GB RAM (8 expertos, mejor modelo general)
+#   - CodeLlama 13B: ~16GB RAM (mejor modelo para código)
+#   - RAM TOTAL: ~28GB (se cargan uno a la vez, máximo ~16GB simultáneo)
 #
-# Con 25GB RAM puedes usar modelos 7B sin problemas (recomendado)
-# O modelos 13B si quieres máximo rendimiento (cambia las variables abajo)
-LLAMA_MODEL="mistral:7b"  # Mistral 7B - muy permisivo y sin restricciones
-DEEPSEEK_MODEL="codellama:7b"  # CodeLlama 7B - menos restrictivo que DeepSeek
-# 
-# Si quieres MÁXIMO rendimiento con 25GB RAM, descomenta estas líneas:
-# LLAMA_MODEL="mistral-nemo:12b"  # ~12GB RAM, más potente
-# DEEPSEEK_MODEL="codellama:13b"  # ~16GB RAM, más potente para código
+# RAM MÍNIMA RECOMENDADA: 32GB para uso cómodo
+# RAM MÍNIMA ABSOLUTA: 20GB (con modelos 13B)
+#
+# Si tienes menos RAM, cambia a modelos 7B (ver opciones abajo)
+# ============================================================================
+
+# ⭐ MEJORES MODELOS SIN RESTRICCIONES (MÁXIMO RENDIMIENTO)
+# NOTA: Si tienes menos de 32GB RAM, usa modelos 7B (descomenta las líneas de abajo)
+# LLAMA_MODEL="mixtral:8x7b"      # ⭐ MEJOR modelo general - 8 expertos (~12GB RAM, pero necesita ~25GB total)
+# DEEPSEEK_MODEL="codellama:13b"  # ⭐ MEJOR modelo para código (~16GB RAM)
+
+# Modelos 7B (balance perfecto para sistemas con 16GB RAM)
+LLAMA_MODEL="mistral:7b"       # ~4GB RAM - Muy permisivo y sin restricciones
+DEEPSEEK_MODEL="codellama:7b"  # ~4GB RAM - Excelente para código
+
+# ALTERNATIVAS si tienes menos RAM:
+# Opción 1: Modelos 7B (balance perfecto, ~8GB RAM total)
+# LLAMA_MODEL="mistral:7b"       # ~4GB RAM
+# DEEPSEEK_MODEL="codellama:7b"  # ~4GB RAM
+
+# Opción 2: Modelos 13B individuales (máximo rendimiento, ~16-20GB RAM)
+# LLAMA_MODEL="llama2:13b"       # ~16GB RAM
+# DEEPSEEK_MODEL="codellama:13b" # ~16GB RAM
 
 echo "🔍 Verificando Ollama..."
 if ! command -v ollama &> /dev/null; then
@@ -114,41 +128,84 @@ echo "   Modelos seleccionados:"
 echo "   - Principal: $LLAMA_MODEL (sin restricciones)"
 echo "   - Código: $DEEPSEEK_MODEL (sin restricciones)"
 echo ""
-MODELS=$(ollama list 2>/dev/null | grep -E "$LLAMA_MODEL|$DEEPSEEK_MODEL" || echo "")
+echo "⏳ IMPORTANTE: Los modelos se descargarán completamente antes de iniciar la aplicación."
+echo "   Esto puede tardar varios minutos dependiendo de tu conexión."
+echo ""
 
-if ! echo "$MODELS" | grep -q "$LLAMA_MODEL"; then
+# Función para verificar si un modelo está realmente disponible
+check_model_available() {
+    local model_name=$1
+    ollama list 2>/dev/null | grep -q "^$model_name" || ollama list 2>/dev/null | grep -q "$model_name"
+}
+
+# Verificar y descargar modelo principal
+MODELS=$(ollama list 2>/dev/null || echo "")
+
+if ! check_model_available "$LLAMA_MODEL"; then
     echo "📥 Descargando modelo principal: $LLAMA_MODEL"
-    echo "   Esto puede tomar varios minutos la primera vez..."
-    ollama pull "$LLAMA_MODEL"
-    if [ $? -ne 0 ]; then
-        echo "⚠️  Error descargando modelo principal"
-        echo "   Intentando modelo alternativo: mistral:7b"
-        LLAMA_MODEL="mistral:7b"
-        ollama pull "$LLAMA_MODEL" || {
-            echo "❌ Error descargando modelo alternativo"
-            echo "   Intenta manualmente: ollama pull mistral:7b"
-        }
+    echo "   ⏳ Esto puede tomar varios minutos (modelo grande)..."
+    echo "   💡 Puedes ver el progreso arriba"
+    echo ""
+    
+    if ollama pull "$LLAMA_MODEL"; then
+        # Verificar que realmente se descargó
+        if check_model_available "$LLAMA_MODEL"; then
+            echo "✅ Modelo principal descargado y verificado: $LLAMA_MODEL"
+        else
+            echo "⚠️  Modelo descargado pero no aparece en la lista. Verificando..."
+            sleep 2
+            if check_model_available "$LLAMA_MODEL"; then
+                echo "✅ Modelo principal verificado: $LLAMA_MODEL"
+            else
+                echo "❌ Error: Modelo no disponible después de descargar"
+                echo "   Intenta manualmente: ollama pull $LLAMA_MODEL"
+                exit 1
+            fi
+        fi
     else
-        echo "✅ Modelo principal descargado"
+        echo "❌ Error descargando modelo principal: $LLAMA_MODEL"
+        echo "   Verifica tu conexión a internet y espacio en disco"
+        exit 1
     fi
 else
-    echo "✅ Modelo principal ya está disponible"
+    echo "✅ Modelo principal ya está disponible: $LLAMA_MODEL"
 fi
 
-if ! echo "$MODELS" | grep -q "$DEEPSEEK_MODEL"; then
+echo ""
+
+# Verificar y descargar modelo de código
+if ! check_model_available "$DEEPSEEK_MODEL"; then
     echo "📥 Descargando modelo de código: $DEEPSEEK_MODEL"
-    echo "   Esto puede tomar varios minutos la primera vez..."
-    ollama pull "$DEEPSEEK_MODEL"
-    if [ $? -ne 0 ]; then
-        echo "⚠️  Error descargando modelo de código"
-        echo "   Intenta manualmente: ollama pull $DEEPSEEK_MODEL"
+    echo "   ⏳ Esto puede tomar varios minutos (modelo grande)..."
+    echo "   💡 Puedes ver el progreso arriba"
+    echo ""
+    
+    if ollama pull "$DEEPSEEK_MODEL"; then
+        # Verificar que realmente se descargó
+        if check_model_available "$DEEPSEEK_MODEL"; then
+            echo "✅ Modelo de código descargado y verificado: $DEEPSEEK_MODEL"
+        else
+            echo "⚠️  Modelo descargado pero no aparece en la lista. Verificando..."
+            sleep 2
+            if check_model_available "$DEEPSEEK_MODEL"; then
+                echo "✅ Modelo de código verificado: $DEEPSEEK_MODEL"
+            else
+                echo "❌ Error: Modelo no disponible después de descargar"
+                echo "   Intenta manualmente: ollama pull $DEEPSEEK_MODEL"
+                exit 1
+            fi
+        fi
     else
-        echo "✅ Modelo DeepSeek descargado"
+        echo "❌ Error descargando modelo de código: $DEEPSEEK_MODEL"
+        echo "   Verifica tu conexión a internet y espacio en disco"
+        exit 1
     fi
 else
-    echo "✅ Modelo DeepSeek ya está disponible"
+    echo "✅ Modelo de código ya está disponible: $DEEPSEEK_MODEL"
 fi
 
+echo ""
+echo "✅ Todos los modelos están listos. Continuando con la configuración..."
 echo ""
 
 # Configurar backend

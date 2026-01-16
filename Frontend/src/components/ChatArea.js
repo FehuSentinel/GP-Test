@@ -17,7 +17,7 @@ function ChatArea({ conversationId, username }) {
     } else {
       setMessages([]);
     }
-  }, [conversationId]);
+  }, [conversationId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     scrollToBottom();
@@ -128,13 +128,29 @@ function ChatArea({ conversationId, username }) {
     setCodeToExecute(null);
   };
 
+  // Si no hay conversación, mostrar área de chat vacía pero permitir escribir
   if (!conversationId) {
     return (
-      <div className="chat-area empty">
-        <div className="empty-chat">
-          <h2>Selecciona una conversación</h2>
-          <p>O crea una nueva desde el panel izquierdo</p>
+      <div className="chat-area">
+        <div className="chat-header">
+          <h2>Chat</h2>
+          {username && <span className="username">Usuario: {username}</span>}
         </div>
+        <div className="empty-chat-message">
+          <h2>¡Hola{username ? `, ${username}` : ''}!</h2>
+          <p>Comienza una nueva conversación escribiendo un mensaje abajo</p>
+        </div>
+        <MessageList messages={messages} loading={loading} />
+        <div ref={messagesEndRef} />
+        <MessageInput onSend={handleSendMessage} disabled={loading} />
+        {codeToExecute && (
+          <CodeExecutionModal
+            code={codeToExecute.code}
+            language={codeToExecute.language}
+            onExecute={handleExecuteCode}
+            onCancel={handleCancelExecution}
+          />
+        )}
       </div>
     );
   }

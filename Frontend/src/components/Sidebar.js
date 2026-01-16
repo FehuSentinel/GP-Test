@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './Sidebar.css';
 import { getConversations, createConversation, deleteConversation } from '../services/api';
 
-function Sidebar({ currentConversation, onSelectConversation }) {
+function Sidebar({ currentConversation, onSelectConversation, user, onLogout }) {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,6 +52,17 @@ function Sidebar({ currentConversation, onSelectConversation }) {
           + Nueva conversación
         </button>
       </div>
+      {user && (
+        <div className="user-info">
+          <div className="user-details">
+            <span className="user-name">{user.username}</span>
+            <span className="user-email">{user.email}</span>
+          </div>
+          <button className="logout-btn" onClick={onLogout} title="Cerrar sesión">
+            🚪
+          </button>
+        </div>
+      )}
       <div className="conversations-list">
         {loading ? (
           <div className="loading">Cargando...</div>
